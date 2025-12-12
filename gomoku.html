@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="theme-color" content="#0b1020" />
-  <title>五子棋：AI(5级) + 双人房间(P2P)</title>
+  <title>五子棋：AI(5级) + 双人房间(P2P) - 优化版</title>
   <style>
     :root{
       --bg:#070a12;
@@ -17,150 +17,605 @@
       --accent:#5ad6ff;
       --danger:#ff5a7a;
       --ok:#3ddc97;
+      --warning:#ffb84d;
+      --grid-size: 15;
     }
     *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}
     html,body{height:100%;margin:0;background:radial-gradient(1200px 800px at 20% 0%, #101a35 0%, #070a12 55%, #05070c 100%);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial}
-    .wrap{min-height:100vh;max-height:-webkit-fill-available;display:flex;flex-direction:column;padding:12px;gap:10px;padding-top:env(safe-area-inset-top,12px);padding-bottom:env(safe-area-inset-bottom,12px)}
-    .top{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
-    .title{font-weight:900;font-size:20px;letter-spacing:.5px}
-    .subtitle{font-size:12px;color:var(--muted)}
-    .row{display:flex;gap:10px;flex-wrap:wrap}
-    .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px;backdrop-filter:blur(10px)}
-    .card.big{padding:12px}
-    .pill{display:inline-flex;align-items:center;gap:8px;padding:8px 10px;border-radius:999px;border:1px solid var(--line);background:var(--card2);font-size:12px;color:var(--muted)}
-    .btn{appearance:none;border:1px solid var(--line);background:var(--card2);color:var(--text);padding:10px 12px;border-radius:12px;font-weight:700}
-    .btn:active{transform:scale(.98)}
-    .btn.primary{border-color:rgba(90,214,255,.5);background:linear-gradient(135deg, rgba(90,214,255,.25), rgba(255,255,255,.06))}
-    .btn.danger{border-color:rgba(255,90,122,.5);background:linear-gradient(135deg, rgba(255,90,122,.22), rgba(255,255,255,.06))}
-    .btn.ok{border-color:rgba(61,220,151,.5);background:linear-gradient(135deg, rgba(61,220,151,.22), rgba(255,255,255,.06))}
-    .seg{display:flex;border:1px solid var(--line);border-radius:12px;overflow:hidden}
-    .seg button{border:0;background:transparent;color:var(--muted);padding:10px 12px;font-weight:800}
-    .seg button.active{background:rgba(90,214,255,.18);color:var(--text)}
-    .grid{display:grid;grid-template-columns:1fr;gap:10px}
-    @media(min-width:900px){.grid{grid-template-columns:1.1fr .9fr}}
-    canvas{width:100%;height:auto;max-width:720px;aspect-ratio:1/1;background:linear-gradient(180deg,#101a2f,#0b1020);border:1px solid var(--line);border-radius:16px;box-shadow:0 16px 40px rgba(0,0,0,.55)}
-    .panel{display:flex;flex-direction:column;gap:10px}
-    .kv{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
-    .label{font-size:12px;color:var(--muted)}
-    .val{font-weight:900}
-    .small{font-size:12px;color:var(--muted);line-height:1.4}
-    textarea,input{width:100%;padding:10px;border-radius:12px;border:1px solid var(--line);background:rgba(0,0,0,.28);color:var(--text);font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace}
-    textarea{min-height:86px;resize:vertical}
-    .hint{font-size:12px;color:var(--muted)}
-    .status{font-size:12px}
-    .status.ok{color:var(--ok)}
-    .status.bad{color:var(--danger)}
-    .status.neutral{color:var(--muted)}
+    
+    .wrap{
+      min-height:100vh;
+      max-height:-webkit-fill-available;
+      display:flex;
+      flex-direction:column;
+      padding:12px;
+      gap:12px;
+      padding-top:env(safe-area-inset-top,12px);
+      padding-bottom:env(safe-area-inset-bottom,12px);
+      overflow-y: auto;
+    }
+    
+    /* 顶部区域 */
+    .header{
+      display:flex;
+      flex-direction: column;
+      gap:8px;
+    }
+    
+    .title-row{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      flex-wrap:wrap;
+      gap:10px;
+    }
+    
+    .title-group{
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+    }
+    
+    .game-title{
+      font-weight:900;
+      font-size:22px;
+      letter-spacing:.5px;
+      background: linear-gradient(90deg, #5ad6ff 0%, #a78bfa 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    
+    .subtitle{
+      font-size:13px;
+      color:var(--muted);
+    }
+    
+    /* 游戏状态标签 */
+    .game-state{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+    }
+    
+    .state-tag{
+      display:flex;
+      align-items:center;
+      gap:6px;
+      padding:6px 10px;
+      border-radius:20px;
+      background:rgba(90,214,255,.12);
+      border:1px solid rgba(90,214,255,.2);
+      font-size:12px;
+      font-weight:500;
+    }
+    
+    .state-tag .label{
+      color:var(--muted);
+    }
+    
+    .state-tag .value{
+      color:var(--text);
+      font-weight:600;
+    }
+    
+    /* 游戏区域 */
+    .game-container{
+      display:grid;
+      grid-template-columns:1fr;
+      gap:12px;
+    }
+    
+    @media(min-width:768px){
+      .game-container{
+        grid-template-columns:1.1fr .9fr;
+      }
+    }
+    
+    /* 棋盘区域 */
+    .board-container{
+      position:relative;
+      background:linear-gradient(180deg,#0e1629,#0b1020);
+      border-radius:16px;
+      border:1px solid rgba(255,255,255,.08);
+      overflow:hidden;
+      box-shadow:0 12px 32px rgba(0,0,0,.4);
+    }
+    
+    .board-wrapper{
+      position:relative;
+      width:100%;
+      aspect-ratio:1/1;
+      overflow:hidden;
+    }
+    
+    #board{
+      position:absolute;
+      top:0;
+      left:0;
+      width:100%!important;
+      height:100%!important;
+      display:block;
+    }
+    
+    /* 游戏控制栏 */
+    .game-controls{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      margin-top:12px;
+      padding:14px;
+      background:rgba(255,255,255,.04);
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.08);
+    }
+    
+    .controls-top{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      flex-wrap:wrap;
+      gap:8px;
+    }
+    
+    .game-info{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+    
+    .info-tag{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:6px 10px;
+      border-radius:10px;
+      background:rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.1);
+      font-size:12px;
+    }
+    
+    .controls-bottom{
+      display:flex;
+      gap:8px;
+      justify-content:flex-end;
+    }
+    
+    /* 按钮样式 */
+    .btn{
+      appearance:none;
+      border:none;
+      padding:10px 16px;
+      border-radius:10px;
+      font-weight:600;
+      font-size:14px;
+      cursor:pointer;
+      transition:all 0.2s ease;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:6px;
+      min-height:44px;
+      -webkit-tap-highlight-color:transparent;
+    }
+    
+    .btn:active{
+      transform:translateY(2px);
+      opacity:0.9;
+    }
+    
+    .btn.primary{
+      background:linear-gradient(135deg, #5ad6ff, #2a9df4);
+      color:white;
+      box-shadow:0 4px 12px rgba(90,214,255,.3);
+    }
+    
+    .btn.secondary{
+      background:rgba(255,255,255,.1);
+      color:var(--text);
+      border:1px solid rgba(255,255,255,.15);
+    }
+    
+    .btn.danger{
+      background:linear-gradient(135deg, #ff5a7a, #e63956);
+      color:white;
+      box-shadow:0 4px 12px rgba(255,90,122,.3);
+    }
+    
+    .btn.success{
+      background:linear-gradient(135deg, #3ddc97, #2dbd7f);
+      color:white;
+      box-shadow:0 4px 12px rgba(61,220,151,.3);
+    }
+    
+    .btn:disabled{
+      opacity:0.5;
+      cursor:not-allowed;
+      transform:none!important;
+    }
+    
+    /* 右侧面板 */
+    .side-panel{
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+    
+    .panel-card{
+      background:rgba(255,255,255,.04);
+      border-radius:14px;
+      padding:16px;
+      border:1px solid rgba(255,255,255,.08);
+      backdrop-filter:blur(10px);
+    }
+    
+    .panel-title{
+      font-size:16px;
+      font-weight:600;
+      margin-bottom:12px;
+      color:var(--text);
+    }
+    
+    /* 模式选择 */
+    .mode-selector{
+      display:flex;
+      border-radius:10px;
+      overflow:hidden;
+      border:1px solid rgba(255,255,255,.15);
+      margin-bottom:16px;
+    }
+    
+    .mode-btn{
+      flex:1;
+      padding:10px;
+      border:none;
+      background:transparent;
+      color:var(--muted);
+      font-weight:600;
+      font-size:13px;
+      cursor:pointer;
+      transition:all 0.2s;
+      text-align:center;
+    }
+    
+    .mode-btn.active{
+      background:rgba(90,214,255,.2);
+      color:var(--text);
+    }
+    
+    /* AI设置 */
+    .ai-settings{
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+    
+    .ai-level-container{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      background:rgba(0,0,0,.2);
+      padding:12px;
+      border-radius:10px;
+    }
+    
+    .level-controls{
+      display:flex;
+      gap:6px;
+    }
+    
+    .level-btn{
+      width:36px;
+      height:36px;
+      border-radius:8px;
+      border:none;
+      background:rgba(255,255,255,.1);
+      color:var(--text);
+      font-size:18px;
+      font-weight:600;
+      cursor:pointer;
+    }
+    
+    .level-display{
+      font-size:18px;
+      font-weight:600;
+      color:#5ad6ff;
+      min-width:60px;
+      text-align:center;
+    }
+    
+    /* 联机面板 */
+    .connection-status{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      padding:10px;
+      border-radius:8px;
+      margin-bottom:12px;
+      font-size:13px;
+    }
+    
+    .status-indicator{
+      width:8px;
+      height:8px;
+      border-radius:50%;
+      background:var(--muted);
+    }
+    
+    .status-indicator.connected{
+      background:#3ddc97;
+      animation:pulse 2s infinite;
+    }
+    
+    @keyframes pulse{
+      0%,100%{opacity:1;}
+      50%{opacity:0.5;}
+    }
+    
+    .connection-controls{
+      display:flex;
+      gap:8px;
+      margin-bottom:16px;
+    }
+    
+    .connection-code{
+      font-family:monospace;
+      background:rgba(0,0,0,.3);
+      padding:12px;
+      border-radius:8px;
+      text-align:center;
+      font-size:18px;
+      letter-spacing:2px;
+      margin:12px 0;
+      border:1px solid rgba(255,255,255,.1);
+      word-break:break-all;
+    }
+    
+    .textarea{
+      width:100%;
+      min-height:80px;
+      padding:10px;
+      border-radius:8px;
+      background:rgba(0,0,0,.3);
+      border:1px solid rgba(255,255,255,.15);
+      color:var(--text);
+      font-family:monospace;
+      font-size:12px;
+      resize:vertical;
+    }
+    
+    /* 游戏结束遮罩 */
+    .game-overlay{
+      position:absolute;
+      top:0;
+      left:0;
+      width:100%;
+      height:100%;
+      background:rgba(0,0,0,.85);
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      z-index:100;
+      opacity:0;
+      pointer-events:none;
+      transition:opacity 0.3s;
+    }
+    
+    .game-overlay.active{
+      opacity:1;
+      pointer-events:all;
+    }
+    
+    .game-overlay-content{
+      background:linear-gradient(135deg, #0e1629, #0b1020);
+      padding:30px;
+      border-radius:20px;
+      text-align:center;
+      border:1px solid rgba(90,214,255,.3);
+      box-shadow:0 20px 40px rgba(0,0,0,.5);
+      max-width:90%;
+    }
+    
+    .result-title{
+      font-size:28px;
+      font-weight:800;
+      margin-bottom:10px;
+      background:linear-gradient(90deg, #ff5a7a, #ffb84d);
+      -webkit-background-clip:text;
+      background-clip:text;
+      color:transparent;
+    }
+    
+    .result-subtitle{
+      font-size:18px;
+      color:var(--muted);
+      margin-bottom:20px;
+    }
+    
+    /* 提示信息 */
+    .hint{
+      font-size:12px;
+      color:var(--muted);
+      line-height:1.5;
+      margin-top:8px;
+    }
+    
+    /* 移动端优化 */
+    @media(max-width:480px){
+      .btn{
+        padding:10px 12px;
+        font-size:13px;
+      }
+      
+      .panel-card{
+        padding:12px;
+      }
+      
+      .game-overlay-content{
+        padding:20px;
+      }
+    }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <div class="top">
-      <div>
-        <div class="title">五子棋</div>
-        <div class="subtitle">AI(1~5级) / 本地双人 / 房间联机(P2P)</div>
-      </div>
-      <div class="row">
-        <span class="pill">黑：先手</span>
-        <span class="pill">规则：连五即胜</span>
+    <!-- 顶部标题区域 -->
+    <div class="header">
+      <div class="title-row">
+        <div class="title-group">
+          <div class="game-title">五子棋</div>
+          <div class="subtitle">AI对战(1~5级) / 本地双人 / P2P联机对战</div>
+        </div>
+        <div class="game-state">
+          <div class="state-tag">
+            <span class="label">先手:</span>
+            <span class="value" id="firstPlayerText">黑方</span>
+          </div>
+          <div class="state-tag">
+            <span class="label">规则:</span>
+            <span class="value">连五即胜</span>
+          </div>
+        </div>
       </div>
     </div>
 
-    <div class="grid">
-      <div class="card big">
-        <canvas id="board" width="900" height="900"></canvas>
-        <div class="row" style="margin-top:10px;justify-content:space-between;align-items:center">
-          <div class="row">
-            <span class="pill"><span class="label">回合</span><span class="val" id="turnText">黑</span></span>
-            <span class="pill"><span class="label">模式</span><span class="val" id="modeText">AI</span></span>
-            <span class="pill"><span class="label">状态</span><span class="val" id="stateText">等待开局</span></span>
-          </div>
-          <div class="row">
-            <button class="btn primary" id="newBtn">新开局</button>
-            <button class="btn" id="undoBtn">悔棋</button>
-            <button class="btn danger" id="resetBtn">清空</button>
+    <!-- 游戏主区域 -->
+    <div class="game-container">
+      <!-- 左侧: 棋盘 -->
+      <div class="board-container">
+        <div class="board-wrapper">
+          <canvas id="board"></canvas>
+          
+          <!-- 游戏结束遮罩 -->
+          <div class="game-overlay" id="gameOverlay">
+            <div class="game-overlay-content">
+              <div class="result-title" id="resultTitle">游戏结束</div>
+              <div class="result-subtitle" id="resultSubtitle">黑方获胜!</div>
+              <div class="controls-bottom" style="margin-top:20px;">
+                <button class="btn primary" id="restartBtn">重新开始</button>
+                <button class="btn secondary" id="continueBtn">继续游戏</button>
+              </div>
+            </div>
           </div>
         </div>
-        <div class="small" id="tipText" style="margin-top:8px">
-          直接在棋盘上点/触下子。AI 模式下：你执黑，AI 执白（可切换）。
+        
+        <!-- 游戏控制栏 -->
+        <div class="game-controls">
+          <div class="controls-top">
+            <div class="game-info">
+              <div class="info-tag">
+                <span class="label">当前回合:</span>
+                <span class="value" id="currentTurnText">黑方</span>
+              </div>
+              <div class="info-tag">
+                <span class="label">游戏模式:</span>
+                <span class="value" id="gameModeText">AI对战</span>
+              </div>
+              <div class="info-tag">
+                <span class="label">游戏状态:</span>
+                <span class="value" id="gameStatusText">进行中</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="controls-bottom">
+            <button class="btn primary" id="newGameBtn">
+              <span>新游戏</span>
+            </button>
+            <button class="btn secondary" id="undoBtn">
+              <span>悔棋</span>
+            </button>
+            <button class="btn secondary" id="swapBtn">
+              <span>交换先手</span>
+            </button>
+            <button class="btn danger" id="resetBtn">
+              <span>重置</span>
+            </button>
+          </div>
         </div>
       </div>
 
-      <div class="panel">
-        <div class="card">
-          <div class="kv">
-            <div>
-              <div class="label">游戏模式</div>
-              <div class="seg" id="modeSeg">
-                <button data-mode="ai" class="active">AI对战</button>
-                <button data-mode="local">本地双人</button>
-                <button data-mode="online">房间联机</button>
+      <!-- 右侧: 设置面板 -->
+      <div class="side-panel">
+        <!-- 模式选择 -->
+        <div class="panel-card">
+          <div class="panel-title">游戏设置</div>
+          
+          <div class="mode-selector">
+            <button class="mode-btn active" data-mode="ai" id="modeAI">AI对战</button>
+            <button class="mode-btn" data-mode="local" id="modeLocal">本地双人</button>
+            <button class="mode-btn" data-mode="online" id="modeOnline">联机对战</button>
+          </div>
+          
+          <!-- AI设置 -->
+          <div class="ai-settings" id="aiSettings">
+            <div class="panel-title" style="font-size:14px;margin-bottom:8px;">AI难度设置</div>
+            <div class="ai-level-container">
+              <div>AI等级:</div>
+              <div class="level-display" id="aiLevelDisplay">3</div>
+              <div class="level-controls">
+                <button class="level-btn" id="aiLevelDown">-</button>
+                <button class="level-btn" id="aiLevelUp">+</button>
               </div>
+            </div>
+            <div class="hint">
+              等级越高，AI思考越深，计算越精确。等级1最简单，等级5最难。
             </div>
           </div>
-
-          <div id="aiPanel" style="margin-top:10px;display:block">
-            <div class="row" style="justify-content:space-between;align-items:center">
-              <div class="pill"><span class="label">AI等级</span><span class="val" id="aiLevelText">3</span></div>
-              <div class="row">
-                <button class="btn" id="aiMinus">-</button>
-                <button class="btn" id="aiPlus">+</button>
-              </div>
+          
+          <!-- 联机设置 -->
+          <div class="ai-settings" id="onlineSettings" style="display:none;">
+            <div class="connection-status">
+              <div class="status-indicator" id="connectionIndicator"></div>
+              <span id="connectionStatusText">未连接</span>
             </div>
-            <div class="row" style="margin-top:8px;justify-content:space-between;align-items:center;flex-wrap:wrap">
-              <button class="btn ok" id="swapBtn">交换先后手</button>
-              <span class="hint">等级越高：搜索更深、更会防守/做杀（手机也能跑，放心）</span>
+            
+            <div class="connection-controls">
+              <button class="btn success" id="hostBtn" style="flex:1;">创建房间</button>
+              <button class="btn secondary" id="joinBtn" style="flex:1;">加入房间</button>
+              <button class="btn danger" id="disconnectBtn" disabled style="flex:1;">断开连接</button>
             </div>
-          </div>
-
-          <div id="onlinePanel" style="margin-top:10px;display:none">
-            <div class="small">
-              这是<strong>纯静态 P2P 联机</strong>：用 WebRTC 数据通道传输落子。需要双方复制粘贴一次“配对码”。连上后就是实时对战。
+            
+            <div id="roomCodeSection" style="display:none;">
+              <div style="font-size:13px;margin-bottom:6px;">房间代码:</div>
+              <div class="connection-code" id="roomCodeDisplay"></div>
+              <div class="hint">将此代码分享给好友以加入游戏</div>
             </div>
-
-            <div class="row" style="margin-top:10px;gap:8px">
-              <button class="btn primary" id="hostBtn">我来开房（房主）</button>
-              <button class="btn" id="joinBtn">我来加入（客人）</button>
-              <button class="btn danger" id="dcCloseBtn" disabled>断开</button>
+            
+            <div id="joinSection" style="display:none;margin-top:12px;">
+              <div style="font-size:13px;margin-bottom:6px;">输入房间代码:</div>
+              <input type="text" class="textarea" id="roomCodeInput" placeholder="请输入房间代码" style="min-height:40px;">
+              <button class="btn success" id="connectBtn" style="margin-top:8px;width:100%;">连接</button>
             </div>
-
-            <div style="margin-top:10px">
-              <div class="label">房主：生成“房间码”（Offer），发给对方</div>
-              <textarea id="offerBox" placeholder="点「我来开房」后，这里会出现房间码…"></textarea>
-              <div class="row" style="margin-top:8px">
-                <button class="btn" id="copyOffer">复制房间码</button>
-                <button class="btn" id="clearOffer">清空</button>
-              </div>
-            </div>
-
-            <div style="margin-top:10px">
-              <div class="label">客人：粘贴房间码（Offer），生成“应答码”（Answer）给房主</div>
-              <textarea id="remoteOfferBox" placeholder="客人把房主的房间码粘贴到这里…"></textarea>
-              <button class="btn ok" id="makeAnswer">生成应答码</button>
-              <textarea id="answerBox" placeholder="生成后，把应答码发回给房主…"></textarea>
-              <div class="row" style="margin-top:8px">
-                <button class="btn" id="copyAnswer">复制应答码</button>
-                <button class="btn" id="clearAnswer">清空</button>
-              </div>
-            </div>
-
-            <div style="margin-top:10px">
-              <div class="label">房主：把客人的应答码（Answer）粘贴回来完成连接</div>
-              <textarea id="remoteAnswerBox" placeholder="房主把客人的应答码粘贴到这里…"></textarea>
-              <button class="btn ok" id="applyAnswer">完成连接</button>
-            </div>
-
-            <div class="status neutral" id="netStatus" style="margin-top:10px">未连接</div>
-            <div class="hint">连接后：房主执黑先手，客人执白。</div>
           </div>
         </div>
-
-        <div class="card">
-          <div class="label">快捷说明</div>
-          <div class="small">
-            - <strong>AI对战</strong>：默认你执黑先手；可“交换先后手”。<br/>
-            - <strong>本地双人</strong>：同一台手机轮流下。<br/>
-            - <strong>房间联机</strong>：纯静态 P2P，第一次需要复制粘贴配对码；连上后实时同步。<br/>
+        
+        <!-- 游戏说明 -->
+        <div class="panel-card">
+          <div class="panel-title">游戏说明</div>
+          <div class="hint">
+            <strong>基本规则:</strong> 黑方先手，在棋盘上横向、纵向或斜向连成五子即获胜。<br><br>
+            <strong>AI对战:</strong> 与不同难度的电脑AI对战，可随时交换先后手。<br><br>
+            <strong>本地双人:</strong> 在同一设备上两人轮流对战。<br><br>
+            <strong>联机对战:</strong> 通过房间代码与好友实时对战。
+          </div>
+        </div>
+        
+        <!-- 游戏统计 -->
+        <div class="panel-card">
+          <div class="panel-title">游戏统计</div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+            <span>黑方胜利:</span>
+            <span id="blackWins">0</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+            <span>白方胜利:</span>
+            <span id="whiteWins">0</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;">
+            <span>平局:</span>
+            <span id="draws">0</span>
           </div>
         </div>
       </div>
@@ -169,805 +624,912 @@
 
 <script>
 (() => {
-  // =========================
-  // Board & Game State
-  // =========================
-  const N = 15;
+  'use strict';
+  
+  // ==================== 常量定义 ====================
+  const BOARD_SIZE = 15;
   const EMPTY = 0, BLACK = 1, WHITE = 2;
-
+  const MODES = { AI: 'ai', LOCAL: 'local', ONLINE: 'online' };
+  
+  // ==================== DOM元素引用 ====================
   const canvas = document.getElementById('board');
   const ctx = canvas.getContext('2d');
-
-  const turnText = document.getElementById('turnText');
-  const modeText = document.getElementById('modeText');
-  const stateText = document.getElementById('stateText');
-  const tipText = document.getElementById('tipText');
-
-  const newBtn = document.getElementById('newBtn');
+  
+  // 信息显示元素
+  const currentTurnText = document.getElementById('currentTurnText');
+  const gameModeText = document.getElementById('gameModeText');
+  const gameStatusText = document.getElementById('gameStatusText');
+  const firstPlayerText = document.getElementById('firstPlayerText');
+  
+  // 按钮元素
+  const newGameBtn = document.getElementById('newGameBtn');
   const undoBtn = document.getElementById('undoBtn');
-  const resetBtn = document.getElementById('resetBtn');
-
-  const modeSeg = document.getElementById('modeSeg');
-  const aiPanel = document.getElementById('aiPanel');
-  const onlinePanel = document.getElementById('onlinePanel');
-
-  const aiLevelText = document.getElementById('aiLevelText');
-  const aiMinus = document.getElementById('aiMinus');
-  const aiPlus = document.getElementById('aiPlus');
   const swapBtn = document.getElementById('swapBtn');
-
-  // Online UI
+  const resetBtn = document.getElementById('resetBtn');
+  const restartBtn = document.getElementById('restartBtn');
+  const continueBtn = document.getElementById('continueBtn');
+  
+  // 模式选择
+  const modeAI = document.getElementById('modeAI');
+  const modeLocal = document.getElementById('modeLocal');
+  const modeOnline = document.getElementById('modeOnline');
+  const aiSettings = document.getElementById('aiSettings');
+  const onlineSettings = document.getElementById('onlineSettings');
+  
+  // AI设置
+  const aiLevelDisplay = document.getElementById('aiLevelDisplay');
+  const aiLevelDown = document.getElementById('aiLevelDown');
+  const aiLevelUp = document.getElementById('aiLevelUp');
+  
+  // 联机设置
+  const connectionIndicator = document.getElementById('connectionIndicator');
+  const connectionStatusText = document.getElementById('connectionStatusText');
   const hostBtn = document.getElementById('hostBtn');
   const joinBtn = document.getElementById('joinBtn');
-  const dcCloseBtn = document.getElementById('dcCloseBtn');
-  const offerBox = document.getElementById('offerBox');
-  const remoteOfferBox = document.getElementById('remoteOfferBox');
-  const answerBox = document.getElementById('answerBox');
-  const remoteAnswerBox = document.getElementById('remoteAnswerBox');
-  const makeAnswerBtn = document.getElementById('makeAnswer');
-  const applyAnswerBtn = document.getElementById('applyAnswer');
-  const netStatus = document.getElementById('netStatus');
-  const copyOffer = document.getElementById('copyOffer');
-  const clearOffer = document.getElementById('clearOffer');
-  const copyAnswer = document.getElementById('copyAnswer');
-  const clearAnswer = document.getElementById('clearAnswer');
-
-  let board = Array.from({length:N}, () => Array(N).fill(EMPTY));
-  let moves = []; // {x,y,p}
-  let turn = BLACK;
-  let winner = EMPTY;
-  let mode = 'ai'; // ai | local | online
-  let aiLevel = 3;
-
-  // In AI mode, who is human?
-  let human = BLACK;
-  let ai = WHITE;
-
-  // Online role
-  let netRole = null; // 'host' or 'guest'
-  let myColor = null; // BLACK/WHITE when online
-  let peerColor = null;
-
-  // Rendering metrics
-  function pxRatio(){
-    return Math.max(1, Math.min(3, window.devicePixelRatio || 1));
+  const disconnectBtn = document.getElementById('disconnectBtn');
+  const roomCodeSection = document.getElementById('roomCodeSection');
+  const joinSection = document.getElementById('joinSection');
+  const roomCodeDisplay = document.getElementById('roomCodeDisplay');
+  const roomCodeInput = document.getElementById('roomCodeInput');
+  const connectBtn = document.getElementById('connectBtn');
+  
+  // 游戏结束遮罩
+  const gameOverlay = document.getElementById('gameOverlay');
+  const resultTitle = document.getElementById('resultTitle');
+  const resultSubtitle = document.getElementById('resultSubtitle');
+  
+  // 统计数据
+  const blackWinsEl = document.getElementById('blackWins');
+  const whiteWinsEl = document.getElementById('whiteWins');
+  const drawsEl = document.getElementById('draws');
+  
+  // ==================== 游戏状态变量 ====================
+  let board = Array(BOARD_SIZE).fill().map(() => Array(BOARD_SIZE).fill(EMPTY));
+  let moves = []; // 记录所有走法 {x, y, player}
+  let currentPlayer = BLACK; // 当前回合玩家
+  let winner = EMPTY; // 胜利者
+  let gameMode = MODES.AI; // 当前游戏模式
+  let aiLevel = 3; // AI等级 (1-5)
+  let isGameActive = false; // 游戏是否进行中
+  let isAiThinking = false; // AI是否正在思考
+  
+  // AI对战相关
+  let humanPlayer = BLACK; // 人类玩家颜色
+  let aiPlayer = WHITE; // AI玩家颜色
+  
+  // 联机对战相关
+  let isHost = false; // 是否是房主
+  let roomCode = ''; // 房间代码
+  let connection = null; // WebRTC连接
+  
+  // 统计数据
+  let stats = {
+    blackWins: 0,
+    whiteWins: 0,
+    draws: 0
+  };
+  
+  // ==================== 画布初始化 ====================
+  function initCanvas() {
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.parentElement.getBoundingClientRect();
+    const size = Math.min(rect.width, rect.height);
+    
+    // 设置画布尺寸
+    canvas.width = size * dpr;
+    canvas.height = size * dpr;
+    canvas.style.width = `${size}px`;
+    canvas.style.height = `${size}px`;
+    
+    // 缩放上下文
+    ctx.scale(dpr, dpr);
+    
+    drawBoard();
   }
-  function resizeCanvas(){
-    const r = pxRatio();
-    const cssW = Math.min(720, canvas.parentElement.clientWidth);
-    canvas.style.width = cssW + 'px';
-    canvas.style.height = cssW + 'px';
-    canvas.width = Math.floor(cssW * r);
-    canvas.height = Math.floor(cssW * r);
-    draw();
-  }
-
-  function cellMetrics(){
-    const pad = 28 * pxRatio();
-    const size = Math.min(canvas.width, canvas.height);
-    const inner = size - pad*2;
-    const step = inner / (N-1);
-    return {pad, step, size};
-  }
-
-  function draw(){
-    const {pad, step, size} = cellMetrics();
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-
-    // background glow
-    const g = ctx.createRadialGradient(size*0.3, size*0.2, 10, size*0.5, size*0.5, size*0.9);
-    g.addColorStop(0, 'rgba(90,214,255,.10)');
-    g.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = g;
-    ctx.fillRect(0,0,size,size);
-
-    // grid
-    ctx.strokeStyle = 'rgba(255,255,255,.18)';
-    ctx.lineWidth = Math.max(1, pxRatio());
-    for(let i=0;i<N;i++){
-      const x = pad + i*step;
-      const y = pad + i*step;
-      ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(size-pad, y); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(x, pad); ctx.lineTo(x, size-pad); ctx.stroke();
-    }
-
-    // star points
-    const stars = [
-      [3,3],[11,3],[7,7],[3,11],[11,11]
-    ];
-    ctx.fillStyle='rgba(255,255,255,.28)';
-    for(const [sx,sy] of stars){
-      const cx = pad + sx*step, cy = pad + sy*step;
-      ctx.beginPath(); ctx.arc(cx, cy, 3.5*pxRatio(), 0, Math.PI*2); ctx.fill();
-    }
-
-    // pieces
-    for(let y=0;y<N;y++){
-      for(let x=0;x<N;x++){
-        if(board[y][x]===EMPTY) continue;
-        drawPiece(x,y,board[y][x]);
-      }
-    }
-
-    // last move marker
-    if(moves.length){
-      const m = moves[moves.length-1];
-      const cx = pad + m.x*step, cy = pad + m.y*step;
-      ctx.strokeStyle = 'rgba(90,214,255,.9)';
-      ctx.lineWidth = 2.2*pxRatio();
+  
+  // ==================== 棋盘绘制 ====================
+  function drawBoard() {
+    const size = canvas.width / (window.devicePixelRatio || 1);
+    const cellSize = size / (BOARD_SIZE + 1);
+    const padding = cellSize * 0.5;
+    
+    // 清空画布
+    ctx.clearRect(0, 0, size, size);
+    
+    // 绘制棋盘背景
+    ctx.fillStyle = '#0b1020';
+    ctx.fillRect(0, 0, size, size);
+    
+    // 绘制网格
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+    ctx.lineWidth = 1;
+    
+    for (let i = 0; i < BOARD_SIZE; i++) {
+      const pos = padding + i * cellSize;
+      
+      // 垂直线
       ctx.beginPath();
-      ctx.arc(cx, cy, 10*pxRatio(), 0, Math.PI*2);
+      ctx.moveTo(pos, padding);
+      ctx.lineTo(pos, size - padding);
+      ctx.stroke();
+      
+      // 水平线
+      ctx.beginPath();
+      ctx.moveTo(padding, pos);
+      ctx.lineTo(size - padding, pos);
       ctx.stroke();
     }
-
-    // winner overlay
-    if(winner!==EMPTY){
-      ctx.fillStyle='rgba(0,0,0,.55)';
-      ctx.fillRect(0,0,size,size);
-      ctx.fillStyle='#fff';
-      ctx.textAlign='center';
-      ctx.font = `${34*pxRatio()}px -apple-system, BlinkMacSystemFont, Segoe UI, Roboto`;
-      ctx.fillText((winner===BLACK?'黑':'白')+'方胜利！', size/2, size/2 - 10*pxRatio());
-      ctx.font = `${16*pxRatio()}px -apple-system, BlinkMacSystemFont, Segoe UI, Roboto`;
-      ctx.fillStyle='rgba(255,255,255,.8)';
-      ctx.fillText('点「新开局」继续', size/2, size/2 + 24*pxRatio());
-    }
-
-    syncHUD();
-  }
-
-  function drawPiece(x,y,p){
-    const {pad, step} = cellMetrics();
-    const cx = pad + x*step, cy = pad + y*step;
-    const r = step*0.42;
-
-    // shadow
-    ctx.beginPath();
-    ctx.fillStyle='rgba(0,0,0,.35)';
-    ctx.arc(cx + 2*pxRatio(), cy + 3*pxRatio(), r, 0, Math.PI*2);
-    ctx.fill();
-
-    // stone
-    ctx.beginPath();
-    if(p===BLACK){
-      const g = ctx.createRadialGradient(cx - r*0.3, cy - r*0.3, r*0.2, cx, cy, r);
-      g.addColorStop(0,'#38404f');
-      g.addColorStop(1,'#0a0f1b');
-      ctx.fillStyle=g;
-    }else{
-      const g = ctx.createRadialGradient(cx - r*0.3, cy - r*0.3, r*0.2, cx, cy, r);
-      g.addColorStop(0,'#ffffff');
-      g.addColorStop(1,'#cfd6e6');
-      ctx.fillStyle=g;
-    }
-    ctx.arc(cx, cy, r, 0, Math.PI*2);
-    ctx.fill();
-  }
-
-  function syncHUD(){
-    turnText.textContent = turn===BLACK ? '黑' : '白';
-    modeText.textContent = mode==='ai' ? 'AI' : (mode==='local' ? '本地' : '联机');
-    stateText.textContent = winner!==EMPTY ? '已结束' : (moves.length? '进行中':'等待开局');
-
-    if(mode==='ai'){
-      tipText.textContent = `AI模式：${human===BLACK?'你执黑先手':'你执白后手'}。直接点/触下子；一方连五即胜。`;
-    }else if(mode==='local'){
-      tipText.textContent = '本地双人：同一台设备轮流下子。';
-    }else{
-      if(!dc || dc.readyState!=='open'){
-        tipText.textContent = '联机模式：先建立连接（房主/客人交换配对码）。连接后房主执黑先手。';
-      }else{
-        tipText.textContent = `联机已连接：你执${myColor===BLACK?'黑':'白'}。轮到${turn===myColor?'你':'对手'}下。`;
+    
+    // 绘制星位
+    const starPoints = [
+      [3, 3], [3, 11], [11, 3], [11, 11],
+      [7, 7] // 天元
+    ];
+    
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+    starPoints.forEach(([x, y]) => {
+      const cx = padding + x * cellSize;
+      const cy = padding + y * cellSize;
+      ctx.beginPath();
+      ctx.arc(cx, cy, cellSize * 0.1, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    
+    // 绘制棋子
+    for (let y = 0; y < BOARD_SIZE; y++) {
+      for (let x = 0; x < BOARD_SIZE; x++) {
+        if (board[y][x] !== EMPTY) {
+          drawPiece(x, y, board[y][x]);
+        }
       }
     }
+    
+    // 高亮显示最后一步
+    if (moves.length > 0) {
+      const lastMove = moves[moves.length - 1];
+      drawLastMoveHighlight(lastMove.x, lastMove.y);
+    }
   }
-
-  function resetGame(keepMode=true){
-    board = Array.from({length:N}, () => Array(N).fill(EMPTY));
+  
+  function drawPiece(x, y, player) {
+    const size = canvas.width / (window.devicePixelRatio || 1);
+    const cellSize = size / (BOARD_SIZE + 1);
+    const padding = cellSize * 0.5;
+    const radius = cellSize * 0.4;
+    
+    const cx = padding + x * cellSize;
+    const cy = padding + y * cellSize;
+    
+    // 棋子阴影
+    ctx.beginPath();
+    ctx.arc(cx + 2, cy + 2, radius, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+    ctx.fill();
+    
+    // 棋子渐变
+    const gradient = ctx.createRadialGradient(
+      cx - radius * 0.3, cy - radius * 0.3, 1,
+      cx, cy, radius
+    );
+    
+    if (player === BLACK) {
+      gradient.addColorStop(0, '#666');
+      gradient.addColorStop(1, '#000');
+    } else {
+      gradient.addColorStop(0, '#fff');
+      gradient.addColorStop(1, '#ddd');
+    }
+    
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+    ctx.fillStyle = gradient;
+    ctx.fill();
+    
+    // 棋子边框
+    ctx.strokeStyle = player === BLACK ? '#333' : '#bbb';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+  
+  function drawLastMoveHighlight(x, y) {
+    const size = canvas.width / (window.devicePixelRatio || 1);
+    const cellSize = size / (BOARD_SIZE + 1);
+    const padding = cellSize * 0.5;
+    const radius = cellSize * 0.15;
+    
+    const cx = padding + x * cellSize;
+    const cy = padding + y * cellSize;
+    
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+    ctx.fillStyle = '#ff5a7a';
+    ctx.fill();
+  }
+  
+  // ==================== 游戏逻辑 ====================
+  function startNewGame() {
+    // 重置棋盘
+    board = Array(BOARD_SIZE).fill().map(() => Array(BOARD_SIZE).fill(EMPTY));
     moves = [];
     winner = EMPTY;
-    turn = BLACK;
-
-    if(!keepMode){
-      mode='ai';
-      human=BLACK; ai=WHITE;
+    isGameActive = true;
+    
+    // 设置先手玩家
+    if (gameMode === MODES.AI) {
+      currentPlayer = humanPlayer;
+    } else {
+      currentPlayer = BLACK;
     }
-    draw();
-    if(mode==='ai' && human===WHITE){
-      // AI first
-      setTimeout(()=>aiMove(), 120);
+    
+    // 隐藏游戏结束遮罩
+    gameOverlay.classList.remove('active');
+    
+    updateUI();
+    drawBoard();
+    
+    // 如果AI先手，则AI走第一步
+    if (gameMode === MODES.AI && currentPlayer === aiPlayer) {
+      setTimeout(makeAiMove, 500);
     }
   }
-
-  function clearGame(){
-    resetGame(true);
-  }
-
-  function canPlayNow(p){
-    if(winner!==EMPTY) return false;
-    if(mode==='ai'){
-      return p===human && turn===human;
+  
+  function placePiece(x, y, player) {
+    if (!isGameActive || winner !== EMPTY) return false;
+    if (x < 0 || x >= BOARD_SIZE || y < 0 || y >= BOARD_SIZE) return false;
+    if (board[y][x] !== EMPTY) return false;
+    
+    // 放置棋子
+    board[y][x] = player;
+    moves.push({ x, y, player });
+    
+    // 检查是否获胜
+    if (checkWin(x, y, player)) {
+      winner = player;
+      isGameActive = false;
+      showGameResult(player === BLACK ? '黑方获胜!' : '白方获胜!');
+      updateStats(player);
+    } else if (moves.length === BOARD_SIZE * BOARD_SIZE) {
+      // 平局
+      winner = EMPTY;
+      isGameActive = false;
+      showGameResult('平局!');
+      stats.draws++;
+      updateStatsDisplay();
+    } else {
+      // 切换玩家
+      currentPlayer = player === BLACK ? WHITE : BLACK;
     }
-    if(mode==='local'){
-      return true;
-    }
-    if(mode==='online'){
-      return dc && dc.readyState==='open' && turn===myColor;
-    }
-    return false;
-  }
-
-  function place(x,y,p){
-    if(x<0||x>=N||y<0||y>=N) return false;
-    if(board[y][x]!==EMPTY) return false;
-    board[y][x]=p;
-    moves.push({x,y,p});
-    // check win
-    if(checkFive(x,y,p)){
-      winner=p;
-    }else{
-      turn = (p===BLACK)?WHITE:BLACK;
-    }
-    draw();
+    
+    drawBoard();
+    updateUI();
+    
     return true;
   }
-
-  function undo(){
-    if(!moves.length || winner!==EMPTY) return;
-    if(mode==='online'){
-      // Keep simple: no undo online (would require sync & agreement)
-      toast('联机模式暂不支持悔棋');
-      return;
-    }
-    if(mode==='ai'){
-      // undo two steps if possible (human+ai)
-      const last = moves.pop();
-      board[last.y][last.x]=EMPTY;
-      if(moves.length){
-        const last2 = moves.pop();
-        board[last2.y][last2.x]=EMPTY;
+  
+  function checkWin(x, y, player) {
+    // 检查方向: 水平、垂直、对角线
+    const directions = [
+      [1, 0],  // 水平
+      [0, 1],  // 垂直
+      [1, 1],  // 对角线 \
+      [1, -1]  // 对角线 /
+    ];
+    
+    for (const [dx, dy] of directions) {
+      let count = 1;
+      
+      // 正向检查
+      for (let i = 1; i <= 4; i++) {
+        const nx = x + dx * i;
+        const ny = y + dy * i;
+        if (nx < 0 || nx >= BOARD_SIZE || ny < 0 || ny >= BOARD_SIZE) break;
+        if (board[ny][nx] !== player) break;
+        count++;
       }
-      winner=EMPTY;
-      turn = human; // back to human
-      draw();
+      
+      // 反向检查
+      for (let i = 1; i <= 4; i++) {
+        const nx = x - dx * i;
+        const ny = y - dy * i;
+        if (nx < 0 || nx >= BOARD_SIZE || ny < 0 || ny >= BOARD_SIZE) break;
+        if (board[ny][nx] !== player) break;
+        count++;
+      }
+      
+      if (count >= 5) return true;
+    }
+    
+    return false;
+  }
+  
+  function undoMove() {
+    if (!isGameActive || moves.length === 0) return;
+    
+    // 如果是AI模式且轮到AI，需要悔两步
+    if (gameMode === MODES.AI && currentPlayer === aiPlayer && moves.length >= 2) {
+      // 移除AI的最后一步
+      const lastMove = moves.pop();
+      board[lastMove.y][lastMove.x] = EMPTY;
+      
+      // 移除玩家的最后一步
+      const secondLastMove = moves.pop();
+      board[secondLastMove.y][secondLastMove.x] = EMPTY;
+      
+      currentPlayer = humanPlayer;
+    } else {
+      // 移除最后一步
+      const lastMove = moves.pop();
+      board[lastMove.y][lastMove.x] = EMPTY;
+      currentPlayer = lastMove.player === BLACK ? WHITE : BLACK;
+    }
+    
+    winner = EMPTY;
+    drawBoard();
+    updateUI();
+  }
+  
+  function swapPlayers() {
+    if (gameMode !== MODES.AI) return;
+    
+    humanPlayer = humanPlayer === BLACK ? WHITE : BLACK;
+    aiPlayer = aiPlayer === BLACK ? WHITE : BLACK;
+    
+    // 如果游戏进行中，重新开始
+    if (isGameActive) {
+      startNewGame();
+    } else {
+      updateUI();
+    }
+  }
+  
+  function showGameResult(result) {
+    resultTitle.textContent = '游戏结束';
+    resultSubtitle.textContent = result;
+    gameOverlay.classList.add('active');
+  }
+  
+  // ==================== AI逻辑 ====================
+  async function makeAiMove() {
+    if (!isGameActive || winner !== EMPTY || currentPlayer !== aiPlayer || isAiThinking) {
       return;
     }
-    // local
-    const last = moves.pop();
-    board[last.y][last.x]=EMPTY;
-    winner=EMPTY;
-    turn = last.p; // revert turn to the undone player
-    draw();
+    
+    isAiThinking = true;
+    gameStatusText.textContent = 'AI思考中...';
+    
+    // 使用setTimeout让UI有机会更新
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    // 获取最佳走法
+    const bestMove = getBestMove();
+    
+    if (bestMove) {
+      // 模拟思考时间
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      placePiece(bestMove.x, bestMove.y, aiPlayer);
+    }
+    
+    isAiThinking = false;
+    updateUI();
   }
-
-  function checkFive(x,y,p){
-    const dirs = [[1,0],[0,1],[1,1],[1,-1]];
-    for(const [dx,dy] of dirs){
-      let cnt=1;
-      cnt += countDir(x,y,dx,dy,p);
-      cnt += countDir(x,y,-dx,-dy,p);
-      if(cnt>=5) return true;
+  
+  function getBestMove() {
+    const depth = aiLevel; // 搜索深度与AI等级相关
+    const candidates = getCandidateMoves();
+    
+    // 如果没有候选位置，返回null
+    if (candidates.length === 0) return null;
+    
+    let bestScore = -Infinity;
+    let bestMove = candidates[0];
+    
+    // 简单的启发式搜索
+    for (const move of candidates) {
+      // 尝试走这一步
+      board[move.y][move.x] = aiPlayer;
+      
+      // 计算分数
+      let score = evaluatePosition(move.x, move.y, aiPlayer);
+      
+      // 如果是必胜步，直接返回
+      if (checkWin(move.x, move.y, aiPlayer)) {
+        board[move.y][move.x] = EMPTY;
+        return move;
+      }
+      
+      // 如果对方有必胜步，优先防守
+      board[move.y][move.x] = humanPlayer;
+      if (checkWin(move.x, move.y, humanPlayer)) {
+        board[move.y][move.x] = EMPTY;
+        score += 10000; // 防守得分
+        return { x: move.x, y: move.y };
+      }
+      board[move.y][move.x] = EMPTY;
+      
+      // 根据AI等级调整搜索
+      if (aiLevel >= 3) {
+        // 中级以上AI会考虑更多
+        score += evaluateBoard(aiPlayer) - evaluateBoard(humanPlayer);
+      }
+      
+      if (aiLevel >= 4) {
+        // 高级AI会进行简单的前瞻
+        score += lookAhead(move.x, move.y, aiPlayer, depth - 1);
+      }
+      
+      // 更新最佳走法
+      if (score > bestScore) {
+        bestScore = score;
+        bestMove = move;
+      }
+    }
+    
+    return bestMove;
+  }
+  
+  function getCandidateMoves() {
+    const candidates = [];
+    
+    // 如果棋盘为空，返回中心点
+    if (moves.length === 0) {
+      return [{ x: Math.floor(BOARD_SIZE / 2), y: Math.floor(BOARD_SIZE / 2) }];
+    }
+    
+    // 收集所有空位，但只考虑已有棋子附近的空位
+    for (let y = 0; y < BOARD_SIZE; y++) {
+      for (let x = 0; x < BOARD_SIZE; x++) {
+        if (board[y][x] === EMPTY) {
+          // 检查附近是否有棋子
+          if (hasNeighbor(x, y, 2)) {
+            candidates.push({ x, y, score: evaluateMove(x, y) });
+          }
+        }
+      }
+    }
+    
+    // 按分数排序，返回前N个候选
+    candidates.sort((a, b) => b.score - a.score);
+    const limit = Math.min(candidates.length, aiLevel * 6); // 根据AI等级限制候选数量
+    return candidates.slice(0, limit).map(m => ({ x: m.x, y: m.y }));
+  }
+  
+  function hasNeighbor(x, y, radius) {
+    for (let dy = -radius; dy <= radius; dy++) {
+      for (let dx = -radius; dx <= radius; dx++) {
+        const nx = x + dx;
+        const ny = y + dy;
+        
+        if (nx >= 0 && nx < BOARD_SIZE && ny >= 0 && ny < BOARD_SIZE) {
+          if (board[ny][nx] !== EMPTY) {
+            return true;
+          }
+        }
+      }
     }
     return false;
   }
-  function countDir(x,y,dx,dy,p){
-    let c=0;
-    for(let k=1;k<5;k++){
-      const nx=x+dx*k, ny=y+dy*k;
-      if(nx<0||nx>=N||ny<0||ny>=N) break;
-      if(board[ny][nx]!==p) break;
-      c++;
-    }
-    return c;
-  }
-
-  // =========================
-  // Input (touch/click)
-  // =========================
-  function eventToCell(e){
-    const rect = canvas.getBoundingClientRect();
-    const r = pxRatio();
-    const ex = (e.touches?e.touches[0].clientX:e.clientX) - rect.left;
-    const ey = (e.touches?e.touches[0].clientY:e.clientY) - rect.top;
-    const x = ex * (canvas.width / rect.width);
-    const y = ey * (canvas.height / rect.height);
-    const {pad, step} = cellMetrics();
-    const cx = Math.round((x - pad) / step);
-    const cy = Math.round((y - pad) / step);
-    return {cx, cy};
-  }
-
-  function handlePlay(cx,cy){
-    if(!canPlayNow(turn)) return;
-    const p = turn;
-    if(place(cx,cy,p)){
-      if(mode==='online'){
-        sendNet({t:'move', x:cx, y:cy, p});
-      }
-      if(mode==='ai' && winner===EMPTY){
-        // AI response
-        setTimeout(()=>aiMove(), 40);
-      }
-    }
-  }
-
-  canvas.addEventListener('click', (e)=>{
-    const {cx,cy}=eventToCell(e);
-    handlePlay(cx,cy);
-  });
-
-  canvas.addEventListener('touchstart', (e)=>{
-    e.preventDefault();
-    const {cx,cy}=eventToCell(e);
-    handlePlay(cx,cy);
-  }, {passive:false});
-
-  window.addEventListener('resize', resizeCanvas);
-
-  // =========================
-  // UI actions
-  // =========================
-  newBtn.onclick = ()=> resetGame(true);
-  resetBtn.onclick = ()=> clearGame();
-  undoBtn.onclick = ()=> undo();
-
-  modeSeg.addEventListener('click', (e)=>{
-    const btn = e.target.closest('button[data-mode]');
-    if(!btn) return;
-    const m = btn.dataset.mode;
-    [...modeSeg.querySelectorAll('button')].forEach(b=>b.classList.toggle('active', b===btn));
-    mode = m;
-    aiPanel.style.display = (mode==='ai')?'block':'none';
-    onlinePanel.style.display = (mode==='online')?'block':'none';
-    if(mode!=='online'){
-      // keep any existing dc connection unless user disconnects; but gameplay should use current mode
-    }
-    resetGame(true);
-  });
-
-  aiMinus.onclick = ()=>{ aiLevel = Math.max(1, aiLevel-1); aiLevelText.textContent=aiLevel; };
-  aiPlus.onclick = ()=>{ aiLevel = Math.min(5, aiLevel+1); aiLevelText.textContent=aiLevel; };
-
-  swapBtn.onclick = ()=>{
-    if(mode!=='ai') return;
-    // Swap roles
-    [human, ai] = [ai, human];
-    resetGame(true);
-  };
-
-  // =========================
-  // AI (5 levels): alpha-beta + pattern heuristic
-  // =========================
-  // Candidate move generation: cells near existing stones, scored, take top-K
-  function getCandidates(){
-    if(moves.length===0) return [{x:7,y:7}];
-    const near = new Map();
-    const radius = 2;
-    for(const m of moves){
-      for(let dy=-radius;dy<=radius;dy++){
-        for(let dx=-radius;dx<=radius;dx++){
-          const x=m.x+dx,y=m.y+dy;
-          if(x<0||x>=N||y<0||y>=N) continue;
-          if(board[y][x]!==EMPTY) continue;
-          const key = x+','+y;
-          if(!near.has(key)) near.set(key,{x,y,score:0});
-        }
-      }
-    }
-    // quick score by local heuristic (both sides)
-    for(const c of near.values()){
-      c.score = quickPointScore(c.x,c.y,ai) + quickPointScore(c.x,c.y,human)*0.92;
-    }
-    const arr = [...near.values()].sort((a,b)=>b.score-a.score);
-
-    // limit by level (higher level sees more candidates)
-    const K = [10, 14, 18, 24, 32][aiLevel-1];
-    return arr.slice(0, K);
-  }
-
-  function quickPointScore(x,y,p){
-    // Evaluate if placing p at (x,y) creates strong patterns
-    // Sum of directional line scores
-    let total=0;
-    const dirs = [[1,0],[0,1],[1,1],[1,-1]];
-    board[y][x]=p;
-    for(const [dx,dy] of dirs){
-      total += lineScore(x,y,dx,dy,p);
-    }
-    board[y][x]=EMPTY;
-    return total;
-  }
-
-  function lineScore(x,y,dx,dy,p){
-    // Count consecutive + open ends around x,y in that direction
-    let count=1;
-    let open=0;
-
-    // forward
-    let k=1;
-    while(true){
-      const nx=x+dx*k, ny=y+dy*k;
-      if(nx<0||nx>=N||ny<0||ny>=N) break;
-      if(board[ny][nx]===p){count++; k++; continue;}
-      if(board[ny][nx]===EMPTY) open++;
-      break;
-    }
-    // backward
-    k=1;
-    while(true){
-      const nx=x-dx*k, ny=y-dy*k;
-      if(nx<0||nx>=N||ny<0||ny>=N) break;
-      if(board[ny][nx]===p){count++; k++; continue;}
-      if(board[ny][nx]===EMPTY) open++;
-      break;
-    }
-
-    // Pattern scoring (aggressive + defensive)
-    // big weights for immediate win / threats
-    if(count>=5) return 1000000;
-    if(count===4 && open===2) return 200000; // open four
-    if(count===4 && open===1) return 50000;  // closed four
-    if(count===3 && open===2) return 12000;  // open three
-    if(count===3 && open===1) return 3000;   // closed three
-    if(count===2 && open===2) return 900;
-    if(count===2 && open===1) return 120;
-    if(count===1 && open===2) return 30;
-    return 0;
-  }
-
-  function evaluateBoard(forPlayer){
-    // Global evaluation: sum of all stones' patterns
-    // Keep it fast: scan lines around last moves by sampling candidates (good enough for mobile)
-    // We'll approximate by scoring all empty candidate points for both players (limited set)
-    const cand = getCandidates();
-    let score=0;
-    for(const c of cand){
-      const a = quickPointScore(c.x,c.y,forPlayer);
-      const b = quickPointScore(c.x,c.y,opponent(forPlayer));
-      score += a - b*1.05;
-    }
+  
+  function evaluateMove(x, y) {
+    let score = 0;
+    
+    // 位置价值：中心位置更有价值
+    const center = Math.floor(BOARD_SIZE / 2);
+    const distFromCenter = Math.abs(x - center) + Math.abs(y - center);
+    score += (BOARD_SIZE - distFromCenter) * 10;
+    
+    // 模式匹配得分
+    score += evaluatePosition(x, y, aiPlayer) * 2;
+    score += evaluatePosition(x, y, humanPlayer) * 1.5;
+    
     return score;
   }
-
-  function opponent(p){ return p===BLACK?WHITE:BLACK; }
-
-  function aiMove(){
-    if(mode!=='ai' || winner!==EMPTY) return;
-    if(turn!==ai) return;
-
-    const depth = [1,2,3,4,5][aiLevel-1];
-    const t0 = performance.now();
-
-    const best = searchRoot(depth, ai);
-
-    const t1 = performance.now();
-    // console.log('AI level', aiLevel, 'depth', depth, 'ms', (t1-t0).toFixed(1), 'best', best);
-
-    if(best){
-      place(best.x, best.y, ai);
-    }
-  }
-
-  function searchRoot(depth, player){
-    const cand = getCandidates();
-
-    // immediate tactics: win now or block opponent win now
-    for(const c of cand){
-      if(isWinningMove(c.x,c.y,player)) return c;
-    }
-    const opp = opponent(player);
-    for(const c of cand){
-      if(isWinningMove(c.x,c.y,opp)) return c; // block
-    }
-
-    let bestMove = cand[0] || null;
-    let bestScore = -Infinity;
-    let alpha = -Infinity;
-    const beta = Infinity;
-
-    for(const c of cand){
-      board[c.y][c.x] = player;
-      moves.push({x:c.x,y:c.y,p:player});
-
-      const s = -alphabeta(depth-1, opp, -beta, -alpha, player);
-
-      moves.pop();
-      board[c.y][c.x] = EMPTY;
-
-      if(s > bestScore){
-        bestScore = s;
-        bestMove = c;
-      }
-      alpha = Math.max(alpha, s);
-    }
-    return bestMove;
-  }
-
-  function alphabeta(depth, current, alpha, beta, maximizer){
-    // Terminal checks
-    if(moves.length){
-      const last = moves[moves.length-1];
-      if(checkFive(last.x,last.y,last.p)){
-        // If last player made 5, then current side loses (from current POV)
-        const lastPlayer = last.p;
-        const winForMax = (lastPlayer===maximizer);
-        return winForMax ? 999999 - (5-depth) : -999999 + (5-depth);
-      }
-    }
-    if(depth<=0){
-      return evaluateBoard(maximizer);
-    }
-
-    const cand = getCandidates();
-    const opp = opponent(current);
-
-    // move ordering by quick heuristic (helps pruning)
-    cand.sort((a,b)=>{
-      const sa = quickPointScore(a.x,a.y,current) + quickPointScore(a.x,a.y,opp)*0.7;
-      const sb = quickPointScore(b.x,b.y,current) + quickPointScore(b.x,b.y,opp)*0.7;
-      return sb-sa;
-    });
-
-    for(const c of cand){
-      board[c.y][c.x] = current;
-      moves.push({x:c.x,y:c.y,p:current});
-
-      const score = -alphabeta(depth-1, opp, -beta, -alpha, maximizer);
-
-      moves.pop();
-      board[c.y][c.x] = EMPTY;
-
-      if(score > alpha) alpha = score;
-      if(alpha >= beta) break;
-    }
-    return alpha;
-  }
-
-  function isWinningMove(x,y,p){
-    if(board[y][x]!==EMPTY) return false;
-    board[y][x]=p;
-    const win = checkFive(x,y,p);
-    board[y][x]=EMPTY;
-    return win;
-  }
-
-  // =========================
-  // Online (WebRTC P2P) - manual signaling
-  // =========================
-  let pc = null;
-  let dc = null;
-
-  const rtcConfig = {
-    iceServers: [
-      {urls:['stun:stun.l.google.com:19302','stun:stun1.l.google.com:19302']}
-    ]
-  };
-
-  function setNetStatus(text, cls='neutral'){
-    netStatus.className = 'status ' + cls;
-    netStatus.textContent = text;
-  }
-
-  function jsonPack(obj){
-    return btoa(unescape(encodeURIComponent(JSON.stringify(obj))));
-  }
-  function jsonUnpack(str){
-    return JSON.parse(decodeURIComponent(escape(atob(str.trim()))));
-  }
-
-  async function createHost(){
-    try{
-      cleanupNet(false);
-      mode='online';
-      netRole='host'; myColor=BLACK; peerColor=WHITE;
-      [...modeSeg.querySelectorAll('button')].forEach(b=>b.classList.toggle('active', b.dataset.mode==='online'));
-      aiPanel.style.display='none'; onlinePanel.style.display='block';
-      resetGame(true);
-
-      pc = new RTCPeerConnection(rtcConfig);
-      dc = pc.createDataChannel('gomoku');
-      wireDC(dc);
-
-      pc.oniceconnectionstatechange = () => {
-        const s = pc.iceConnectionState;
-        if(s==='connected' || s==='completed') setNetStatus('已连接（你是房主/黑）', 'ok');
-        else if(s==='disconnected' || s==='failed') setNetStatus('连接异常：'+s, 'bad');
-        else setNetStatus('连接状态：'+s, 'neutral');
-      };
-
-      const offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
-
-      // Wait ICE gathering a bit
-      await waitIceGathering(pc, 1800);
-
-      offerBox.value = jsonPack(pc.localDescription);
-      setNetStatus('房间码已生成：发给对方（客人）', 'ok');
-      dcCloseBtn.disabled = false;
-    }catch(err){
-      console.error(err);
-      toast('开房失败：'+(err?.message||err));
-      setNetStatus('开房失败', 'bad');
-    }
-  }
-
-  async function createGuestAnswer(){
-    try{
-      cleanupNet(false);
-      mode='online';
-      netRole='guest'; myColor=WHITE; peerColor=BLACK;
-      [...modeSeg.querySelectorAll('button')].forEach(b=>b.classList.toggle('active', b.dataset.mode==='online'));
-      aiPanel.style.display='none'; onlinePanel.style.display='block';
-      resetGame(true);
-
-      pc = new RTCPeerConnection(rtcConfig);
-
-      pc.ondatachannel = (e)=>{
-        dc = e.channel;
-        wireDC(dc);
-      };
-
-      pc.oniceconnectionstatechange = () => {
-        const s = pc.iceConnectionState;
-        if(s==='connected' || s==='completed') setNetStatus('已连接（你是客人/白）', 'ok');
-        else if(s==='disconnected' || s==='failed') setNetStatus('连接异常：'+s, 'bad');
-        else setNetStatus('连接状态：'+s, 'neutral');
-      };
-
-      const offer = jsonUnpack(remoteOfferBox.value);
-      await pc.setRemoteDescription(offer);
-
-      const answer = await pc.createAnswer();
-      await pc.setLocalDescription(answer);
-
-      await waitIceGathering(pc, 1800);
-
-      answerBox.value = jsonPack(pc.localDescription);
-      setNetStatus('应答码已生成：发回房主', 'ok');
-      dcCloseBtn.disabled = false;
-    }catch(err){
-      console.error(err);
-      toast('生成应答失败：'+(err?.message||err));
-      setNetStatus('生成应答失败', 'bad');
-    }
-  }
-
-  async function applyHostAnswer(){
-    try{
-      if(!pc) return toast('请先开房生成房间码');
-      const ans = jsonUnpack(remoteAnswerBox.value);
-      await pc.setRemoteDescription(ans);
-      setNetStatus('已应用应答码：等待连接…', 'neutral');
-    }catch(err){
-      console.error(err);
-      toast('应用应答失败：'+(err?.message||err));
-      setNetStatus('应用应答失败', 'bad');
-    }
-  }
-
-  function wireDC(channel){
-    channel.onopen = ()=>{
-      setNetStatus('数据通道已打开：开始对战！房主黑先', 'ok');
-      // ensure fresh game
-      resetGame(true);
-      // host starts first
-      turn = BLACK;
-      draw();
-    };
-    channel.onclose = ()=> setNetStatus('数据通道已关闭', 'bad');
-    channel.onerror = ()=> setNetStatus('数据通道错误', 'bad');
-    channel.onmessage = (ev)=>{
-      try{
-        const msg = JSON.parse(ev.data);
-        onNetMsg(msg);
-      }catch(e){}
-    };
-  }
-
-  function sendNet(obj){
-    if(dc && dc.readyState==='open'){
-      dc.send(JSON.stringify(obj));
-    }
-  }
-
-  function onNetMsg(msg){
-    if(msg.t==='move'){
-      // opponent move
-      if(winner!==EMPTY) return;
-      if(board[msg.y][msg.x]!==EMPTY) return;
-      place(msg.x,msg.y,msg.p);
-    }else if(msg.t==='reset'){
-      resetGame(true);
-    }else if(msg.t==='toast'){
-      toast(msg.m || '消息');
-    }
-  }
-
-  async function waitIceGathering(pc, timeoutMs){
-    if(pc.iceGatheringState==='complete') return;
-    await new Promise((resolve)=>{
-      let done=false;
-      const t=setTimeout(()=>{ if(done) return; done=true; resolve(); }, timeoutMs);
-      pc.addEventListener('icegatheringstatechange', ()=>{
-        if(pc.iceGatheringState==='complete' && !done){
-          done=true; clearTimeout(t); resolve();
+  
+  function evaluatePosition(x, y, player) {
+    const directions = [
+      [1, 0], [0, 1], [1, 1], [1, -1]
+    ];
+    
+    let totalScore = 0;
+    
+    for (const [dx, dy] of directions) {
+      let pattern = '';
+      
+      // 收集5个位置（包括当前位置）
+      for (let i = -4; i <= 4; i++) {
+        const nx = x + dx * i;
+        const ny = y + dy * i;
+        
+        if (nx >= 0 && nx < BOARD_SIZE && ny >= 0 && ny < BOARD_SIZE) {
+          if (board[ny][nx] === player) {
+            pattern += '1';
+          } else if (board[ny][nx] === EMPTY) {
+            pattern += '0';
+          } else {
+            pattern += '2'; // 对方棋子
+          }
+        } else {
+          pattern += 'x'; // 边界外
         }
-      });
+      }
+      
+      // 模式匹配评分
+      totalScore += evaluatePattern(pattern, player);
+    }
+    
+    return totalScore;
+  }
+  
+  function evaluatePattern(pattern, player) {
+    // 简单的模式匹配
+    const patterns = {
+      '11111': 1000000, // 连五
+      '011110': 100000,  // 活四
+      '011112': 10000,   // 冲四
+      '01110': 5000,     // 活三
+      '01112': 1000,     // 眠三
+      '0110': 500,       // 活二
+      '0112': 100,       // 眠二
+    };
+    
+    let score = 0;
+    
+    for (const [key, value] of Object.entries(patterns)) {
+      if (pattern.includes(key)) {
+        score += value;
+      }
+    }
+    
+    return score;
+  }
+  
+  function evaluateBoard(player) {
+    let score = 0;
+    
+    // 简单的棋盘评估
+    for (let y = 0; y < BOARD_SIZE; y++) {
+      for (let x = 0; x < BOARD_SIZE; x++) {
+        if (board[y][x] === player) {
+          score += evaluatePosition(x, y, player);
+        }
+      }
+    }
+    
+    return score;
+  }
+  
+  function lookAhead(x, y, player, depth) {
+    if (depth <= 0) return 0;
+    
+    // 尝试走这一步
+    board[y][x] = player;
+    
+    // 检查是否获胜
+    if (checkWin(x, y, player)) {
+      board[y][x] = EMPTY;
+      return 10000;
+    }
+    
+    // 评估这个位置
+    let score = evaluatePosition(x, y, player);
+    
+    // 递归搜索
+    const opponent = player === BLACK ? WHITE : BLACK;
+    const candidates = getCandidateMoves();
+    
+    if (candidates.length > 0) {
+      const bestOpponentMove = candidates[0];
+      score -= lookAhead(bestOpponentMove.x, bestOpponentMove.y, opponent, depth - 1) * 0.8;
+    }
+    
+    // 撤销这一步
+    board[y][x] = EMPTY;
+    
+    return score;
+  }
+  
+  // ==================== 联机功能 ====================
+  function generateRoomCode() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // 移除容易混淆的字符
+    let code = '';
+    for (let i = 0; i < 6; i++) {
+      code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return code;
+  }
+  
+  function showToast(message, type = 'info') {
+    // 简单的toast实现
+    const toast = document.createElement('div');
+    toast.textContent = message;
+    toast.style.cssText = `
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: ${type === 'error' ? '#ff5a7a' : type === 'success' ? '#3ddc97' : 'rgba(90,214,255,0.9)'};
+      color: white;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      z-index: 1000;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      animation: fadeInOut 3s ease;
+    `;
+    
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+      toast.style.opacity = '0';
+      toast.style.transition = 'opacity 0.3s';
+      setTimeout(() => toast.remove(), 300);
+    }, 2700);
+  }
+  
+  // ==================== UI更新 ====================
+  function updateUI() {
+    // 更新回合显示
+    currentTurnText.textContent = currentPlayer === BLACK ? '黑方' : '白方';
+    currentTurnText.style.color = currentPlayer === BLACK ? '#fff' : '#ddd';
+    
+    // 更新游戏状态
+    if (!isGameActive) {
+      gameStatusText.textContent = winner === EMPTY ? '等待开始' : '已结束';
+    } else {
+      gameStatusText.textContent = isAiThinking ? 'AI思考中...' : '进行中';
+    }
+    
+    // 更新游戏模式显示
+    gameModeText.textContent = 
+      gameMode === MODES.AI ? 'AI对战' : 
+      gameMode === MODES.LOCAL ? '本地双人' : '联机对战';
+    
+    // 更新先手显示
+    if (gameMode === MODES.AI) {
+      firstPlayerText.textContent = humanPlayer === BLACK ? '黑方(你)' : '白方(AI)';
+    } else {
+      firstPlayerText.textContent = '黑方';
+    }
+    
+    // 更新AI等级显示
+    aiLevelDisplay.textContent = aiLevel;
+    
+    // 更新联机状态
+    updateConnectionStatus();
+    
+    // 更新统计数据
+    updateStatsDisplay();
+  }
+  
+  function updateStats(winner) {
+    if (winner === BLACK) {
+      stats.blackWins++;
+    } else if (winner === WHITE) {
+      stats.whiteWins++;
+    } else {
+      stats.draws++;
+    }
+  }
+  
+  function updateStatsDisplay() {
+    blackWinsEl.textContent = stats.blackWins;
+    whiteWinsEl.textContent = stats.whiteWins;
+    drawsEl.textContent = stats.draws;
+  }
+  
+  function updateConnectionStatus() {
+    if (gameMode !== MODES.ONLINE) {
+      connectionIndicator.style.background = 'var(--muted)';
+      connectionStatusText.textContent = '未连接';
+      return;
+    }
+    
+    // 这里可以添加实际的连接状态检查
+    if (connection) {
+      connectionIndicator.style.background = '#3ddc97';
+      connectionIndicator.classList.add('connected');
+      connectionStatusText.textContent = '已连接';
+    } else {
+      connectionIndicator.style.background = '#ff5a7a';
+      connectionIndicator.classList.remove('connected');
+      connectionStatusText.textContent = '未连接';
+    }
+  }
+  
+  // ==================== 事件处理 ====================
+  function handleCanvasClick(event) {
+    if (!isGameActive || winner !== EMPTY) return;
+    
+    // 获取点击位置
+    const rect = canvas.getBoundingClientRect();
+    const size = canvas.width / (window.devicePixelRatio || 1);
+    const cellSize = size / (BOARD_SIZE + 1);
+    const padding = cellSize * 0.5;
+    
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    
+    // 计算棋盘坐标
+    const boardX = Math.round((x - padding) / cellSize);
+    const boardY = Math.round((y - padding) / cellSize);
+    
+    // 检查坐标是否有效
+    if (boardX >= 0 && boardX < BOARD_SIZE && boardY >= 0 && boardY < BOARD_SIZE) {
+      // 检查是否可以落子
+      if (gameMode === MODES.AI) {
+        // AI模式：只有人类玩家可以落子
+        if (currentPlayer === humanPlayer) {
+          if (placePiece(boardX, boardY, humanPlayer)) {
+            // AI回应
+            setTimeout(makeAiMove, 300);
+          }
+        }
+      } else if (gameMode === MODES.LOCAL) {
+        // 本地双人模式：双方都可以落子
+        placePiece(boardX, boardY, currentPlayer);
+      } else if (gameMode === MODES.ONLINE) {
+        // 联机模式：只有当前回合的玩家可以落子
+        // 这里需要添加联机逻辑
+        placePiece(boardX, boardY, currentPlayer);
+        showToast('联机功能正在开发中', 'info');
+      }
+    }
+  }
+  
+  // ==================== 事件监听器 ====================
+  window.addEventListener('resize', initCanvas);
+  
+  canvas.addEventListener('click', handleCanvasClick);
+  
+  // 新游戏按钮
+  newGameBtn.addEventListener('click', () => {
+    startNewGame();
+    showToast('新游戏已开始', 'success');
+  });
+  
+  // 悔棋按钮
+  undoBtn.addEventListener('click', () => {
+    undoMove();
+    showToast('已悔棋', 'info');
+  });
+  
+  // 交换先手按钮
+  swapBtn.addEventListener('click', () => {
+    swapPlayers();
+    showToast('已交换先手', 'success');
+  });
+  
+  // 重置按钮
+  resetBtn.addEventListener('click', () => {
+    if (confirm('确定要重置游戏吗？')) {
+      startNewGame();
+      showToast('游戏已重置', 'info');
+    }
+  });
+  
+  // 重新开始按钮
+  restartBtn.addEventListener('click', () => {
+    gameOverlay.classList.remove('active');
+    startNewGame();
+  });
+  
+  // 继续游戏按钮
+  continueBtn.addEventListener('click', () => {
+    gameOverlay.classList.remove('active');
+  });
+  
+  // 模式选择
+  [modeAI, modeLocal, modeOnline].forEach(btn => {
+    btn.addEventListener('click', () => {
+      // 更新按钮状态
+      [modeAI, modeLocal, modeOnline].forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      
+      // 更新游戏模式
+      gameMode = btn.dataset.mode;
+      
+      // 显示/隐藏设置面板
+      if (gameMode === MODES.AI) {
+        aiSettings.style.display = 'block';
+        onlineSettings.style.display = 'none';
+      } else if (gameMode === MODES.ONLINE) {
+        aiSettings.style.display = 'none';
+        onlineSettings.style.display = 'block';
+      } else {
+        aiSettings.style.display = 'none';
+        onlineSettings.style.display = 'none';
+      }
+      
+      // 重置游戏
+      startNewGame();
+      updateUI();
+    });
+  });
+  
+  // AI等级控制
+  aiLevelDown.addEventListener('click', () => {
+    aiLevel = Math.max(1, aiLevel - 1);
+    aiLevelDisplay.textContent = aiLevel;
+    showToast(`AI等级已调整为: ${aiLevel}`, 'info');
+  });
+  
+  aiLevelUp.addEventListener('click', () => {
+    aiLevel = Math.min(5, aiLevel + 1);
+    aiLevelDisplay.textContent = aiLevel;
+    showToast(`AI等级已调整为: ${aiLevel}`, 'info');
+  });
+  
+  // 联机功能按钮
+  hostBtn.addEventListener('click', () => {
+    roomCode = generateRoomCode();
+    isHost = true;
+    
+    roomCodeSection.style.display = 'block';
+    joinSection.style.display = 'none';
+    roomCodeDisplay.textContent = roomCode;
+    
+    showToast(`房间已创建，代码: ${roomCode}`, 'success');
+  });
+  
+  joinBtn.addEventListener('click', () => {
+    roomCodeSection.style.display = 'none';
+    joinSection.style.display = 'block';
+  });
+  
+  connectBtn.addEventListener('click', () => {
+    const code = roomCodeInput.value.trim().toUpperCase();
+    if (code.length === 6) {
+      roomCode = code;
+      isHost = false;
+      
+      // 模拟连接成功
+      connection = { connected: true };
+      updateUI();
+      showToast(`正在连接房间: ${code}`, 'info');
+      
+      // 这里应该添加实际的WebRTC连接逻辑
+      setTimeout(() => {
+        showToast('已连接到房间，等待房主开始游戏', 'success');
+      }, 1000);
+    } else {
+      showToast('请输入有效的6位房间代码', 'error');
+    }
+  });
+  
+  disconnectBtn.addEventListener('click', () => {
+    connection = null;
+    roomCodeSection.style.display = 'none';
+    joinSection.style.display = 'none';
+    updateUI();
+    showToast('已断开连接', 'info');
+  });
+  
+  // ==================== 初始化 ====================
+  function init() {
+    // 加载统计数据
+    const savedStats = localStorage.getItem('gomoku_stats');
+    if (savedStats) {
+      stats = JSON.parse(savedStats);
+    }
+    
+    // 初始化画布
+    initCanvas();
+    
+    // 初始化游戏
+    startNewGame();
+    
+    // 初始化UI
+    updateUI();
+    
+    // 保存统计数据到localStorage
+    window.addEventListener('beforeunload', () => {
+      localStorage.setItem('gomoku_stats', JSON.stringify(stats));
     });
   }
-
-  function cleanupNet(full=true){
-    try{
-      if(dc){ dc.onopen=dc.onclose=dc.onerror=dc.onmessage=null; if(full) dc.close(); }
-    }catch(_){}
-    try{
-      if(pc){ pc.ondatachannel=pc.oniceconnectionstatechange=null; if(full) pc.close(); }
-    }catch(_){}
-    pc=null; dc=null;
-    if(full){
-      setNetStatus('未连接','neutral');
-      dcCloseBtn.disabled = true;
-      netRole=null; myColor=null; peerColor=null;
-    }
-  }
-
-  hostBtn.onclick = ()=> createHost();
-  joinBtn.onclick = ()=> { setNetStatus('客人模式：先粘贴房主房间码，再点“生成应答码”','neutral'); };
-  makeAnswerBtn.onclick = ()=> createGuestAnswer();
-  applyAnswerBtn.onclick = ()=> applyHostAnswer();
-  dcCloseBtn.onclick = ()=> { cleanupNet(true); toast('已断开'); };
-
-  copyOffer.onclick = async()=>{ await copyText(offerBox.value); toast('房间码已复制'); };
-  clearOffer.onclick = ()=> offerBox.value='';
-  copyAnswer.onclick = async()=>{ await copyText(answerBox.value); toast('应答码已复制'); };
-  clearAnswer.onclick = ()=> answerBox.value='';
-
-  async function copyText(t){
-    try{ await navigator.clipboard.writeText(t); return; }catch(e){}
-    // fallback
-    const ta=document.createElement('textarea');
-    ta.value=t; document.body.appendChild(ta); ta.select();
-    document.execCommand('copy'); document.body.removeChild(ta);
-  }
-
-  // =========================
-  // Tiny toast
-  // =========================
-  let toastTimer=null;
-  function toast(text){
-    let el=document.getElementById('toast');
-    if(!el){
-      el=document.createElement('div');
-      el.id='toast';
-      el.style.position='fixed';
-      el.style.left='50%';
-      el.style.bottom='18px';
-      el.style.transform='translateX(-50%)';
-      el.style.padding='10px 12px';
-      el.style.background='rgba(0,0,0,.65)';
-      el.style.border='1px solid rgba(255,255,255,.15)';
-      el.style.color='#fff';
-      el.style.borderRadius='12px';
-      el.style.fontWeight='800';
-      el.style.fontSize='12px';
-      el.style.zIndex='9999';
-      el.style.maxWidth='92vw';
-      el.style.textAlign='center';
-      document.body.appendChild(el);
-    }
-    el.textContent=text;
-    el.style.opacity='1';
-    clearTimeout(toastTimer);
-    toastTimer=setTimeout(()=>{ el.style.opacity='0'; }, 1600);
-  }
-
-  // =========================
-  // Start
-  // =========================
-  aiLevelText.textContent = aiLevel;
-  resizeCanvas();
-  resetGame(true);
-
+  
+  // 启动游戏
+  init();
 })();
 </script>
 </body>

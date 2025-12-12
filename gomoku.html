@@ -1,0 +1,974 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="theme-color" content="#0b1020" />
+  <title>五子棋：AI(5级) + 双人房间(P2P)</title>
+  <style>
+    :root{
+      --bg:#070a12;
+      --card:rgba(255,255,255,.06);
+      --card2:rgba(255,255,255,.09);
+      --text:#e9eef8;
+      --muted:rgba(233,238,248,.65);
+      --line:rgba(255,255,255,.12);
+      --accent:#5ad6ff;
+      --danger:#ff5a7a;
+      --ok:#3ddc97;
+    }
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}
+    html,body{height:100%;margin:0;background:radial-gradient(1200px 800px at 20% 0%, #101a35 0%, #070a12 55%, #05070c 100%);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial}
+    .wrap{min-height:100vh;max-height:-webkit-fill-available;display:flex;flex-direction:column;padding:12px;gap:10px;padding-top:env(safe-area-inset-top,12px);padding-bottom:env(safe-area-inset-bottom,12px)}
+    .top{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+    .title{font-weight:900;font-size:20px;letter-spacing:.5px}
+    .subtitle{font-size:12px;color:var(--muted)}
+    .row{display:flex;gap:10px;flex-wrap:wrap}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px;backdrop-filter:blur(10px)}
+    .card.big{padding:12px}
+    .pill{display:inline-flex;align-items:center;gap:8px;padding:8px 10px;border-radius:999px;border:1px solid var(--line);background:var(--card2);font-size:12px;color:var(--muted)}
+    .btn{appearance:none;border:1px solid var(--line);background:var(--card2);color:var(--text);padding:10px 12px;border-radius:12px;font-weight:700}
+    .btn:active{transform:scale(.98)}
+    .btn.primary{border-color:rgba(90,214,255,.5);background:linear-gradient(135deg, rgba(90,214,255,.25), rgba(255,255,255,.06))}
+    .btn.danger{border-color:rgba(255,90,122,.5);background:linear-gradient(135deg, rgba(255,90,122,.22), rgba(255,255,255,.06))}
+    .btn.ok{border-color:rgba(61,220,151,.5);background:linear-gradient(135deg, rgba(61,220,151,.22), rgba(255,255,255,.06))}
+    .seg{display:flex;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+    .seg button{border:0;background:transparent;color:var(--muted);padding:10px 12px;font-weight:800}
+    .seg button.active{background:rgba(90,214,255,.18);color:var(--text)}
+    .grid{display:grid;grid-template-columns:1fr;gap:10px}
+    @media(min-width:900px){.grid{grid-template-columns:1.1fr .9fr}}
+    canvas{width:100%;height:auto;max-width:720px;aspect-ratio:1/1;background:linear-gradient(180deg,#101a2f,#0b1020);border:1px solid var(--line);border-radius:16px;box-shadow:0 16px 40px rgba(0,0,0,.55)}
+    .panel{display:flex;flex-direction:column;gap:10px}
+    .kv{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+    .label{font-size:12px;color:var(--muted)}
+    .val{font-weight:900}
+    .small{font-size:12px;color:var(--muted);line-height:1.4}
+    textarea,input{width:100%;padding:10px;border-radius:12px;border:1px solid var(--line);background:rgba(0,0,0,.28);color:var(--text);font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace}
+    textarea{min-height:86px;resize:vertical}
+    .hint{font-size:12px;color:var(--muted)}
+    .status{font-size:12px}
+    .status.ok{color:var(--ok)}
+    .status.bad{color:var(--danger)}
+    .status.neutral{color:var(--muted)}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <div>
+        <div class="title">五子棋</div>
+        <div class="subtitle">AI(1~5级) / 本地双人 / 房间联机(P2P)</div>
+      </div>
+      <div class="row">
+        <span class="pill">黑：先手</span>
+        <span class="pill">规则：连五即胜</span>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="card big">
+        <canvas id="board" width="900" height="900"></canvas>
+        <div class="row" style="margin-top:10px;justify-content:space-between;align-items:center">
+          <div class="row">
+            <span class="pill"><span class="label">回合</span><span class="val" id="turnText">黑</span></span>
+            <span class="pill"><span class="label">模式</span><span class="val" id="modeText">AI</span></span>
+            <span class="pill"><span class="label">状态</span><span class="val" id="stateText">等待开局</span></span>
+          </div>
+          <div class="row">
+            <button class="btn primary" id="newBtn">新开局</button>
+            <button class="btn" id="undoBtn">悔棋</button>
+            <button class="btn danger" id="resetBtn">清空</button>
+          </div>
+        </div>
+        <div class="small" id="tipText" style="margin-top:8px">
+          直接在棋盘上点/触下子。AI 模式下：你执黑，AI 执白（可切换）。
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="card">
+          <div class="kv">
+            <div>
+              <div class="label">游戏模式</div>
+              <div class="seg" id="modeSeg">
+                <button data-mode="ai" class="active">AI对战</button>
+                <button data-mode="local">本地双人</button>
+                <button data-mode="online">房间联机</button>
+              </div>
+            </div>
+          </div>
+
+          <div id="aiPanel" style="margin-top:10px;display:block">
+            <div class="row" style="justify-content:space-between;align-items:center">
+              <div class="pill"><span class="label">AI等级</span><span class="val" id="aiLevelText">3</span></div>
+              <div class="row">
+                <button class="btn" id="aiMinus">-</button>
+                <button class="btn" id="aiPlus">+</button>
+              </div>
+            </div>
+            <div class="row" style="margin-top:8px;justify-content:space-between;align-items:center;flex-wrap:wrap">
+              <button class="btn ok" id="swapBtn">交换先后手</button>
+              <span class="hint">等级越高：搜索更深、更会防守/做杀（手机也能跑，放心）</span>
+            </div>
+          </div>
+
+          <div id="onlinePanel" style="margin-top:10px;display:none">
+            <div class="small">
+              这是<strong>纯静态 P2P 联机</strong>：用 WebRTC 数据通道传输落子。需要双方复制粘贴一次“配对码”。连上后就是实时对战。
+            </div>
+
+            <div class="row" style="margin-top:10px;gap:8px">
+              <button class="btn primary" id="hostBtn">我来开房（房主）</button>
+              <button class="btn" id="joinBtn">我来加入（客人）</button>
+              <button class="btn danger" id="dcCloseBtn" disabled>断开</button>
+            </div>
+
+            <div style="margin-top:10px">
+              <div class="label">房主：生成“房间码”（Offer），发给对方</div>
+              <textarea id="offerBox" placeholder="点「我来开房」后，这里会出现房间码…"></textarea>
+              <div class="row" style="margin-top:8px">
+                <button class="btn" id="copyOffer">复制房间码</button>
+                <button class="btn" id="clearOffer">清空</button>
+              </div>
+            </div>
+
+            <div style="margin-top:10px">
+              <div class="label">客人：粘贴房间码（Offer），生成“应答码”（Answer）给房主</div>
+              <textarea id="remoteOfferBox" placeholder="客人把房主的房间码粘贴到这里…"></textarea>
+              <button class="btn ok" id="makeAnswer">生成应答码</button>
+              <textarea id="answerBox" placeholder="生成后，把应答码发回给房主…"></textarea>
+              <div class="row" style="margin-top:8px">
+                <button class="btn" id="copyAnswer">复制应答码</button>
+                <button class="btn" id="clearAnswer">清空</button>
+              </div>
+            </div>
+
+            <div style="margin-top:10px">
+              <div class="label">房主：把客人的应答码（Answer）粘贴回来完成连接</div>
+              <textarea id="remoteAnswerBox" placeholder="房主把客人的应答码粘贴到这里…"></textarea>
+              <button class="btn ok" id="applyAnswer">完成连接</button>
+            </div>
+
+            <div class="status neutral" id="netStatus" style="margin-top:10px">未连接</div>
+            <div class="hint">连接后：房主执黑先手，客人执白。</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="label">快捷说明</div>
+          <div class="small">
+            - <strong>AI对战</strong>：默认你执黑先手；可“交换先后手”。<br/>
+            - <strong>本地双人</strong>：同一台手机轮流下。<br/>
+            - <strong>房间联机</strong>：纯静态 P2P，第一次需要复制粘贴配对码；连上后实时同步。<br/>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  // =========================
+  // Board & Game State
+  // =========================
+  const N = 15;
+  const EMPTY = 0, BLACK = 1, WHITE = 2;
+
+  const canvas = document.getElementById('board');
+  const ctx = canvas.getContext('2d');
+
+  const turnText = document.getElementById('turnText');
+  const modeText = document.getElementById('modeText');
+  const stateText = document.getElementById('stateText');
+  const tipText = document.getElementById('tipText');
+
+  const newBtn = document.getElementById('newBtn');
+  const undoBtn = document.getElementById('undoBtn');
+  const resetBtn = document.getElementById('resetBtn');
+
+  const modeSeg = document.getElementById('modeSeg');
+  const aiPanel = document.getElementById('aiPanel');
+  const onlinePanel = document.getElementById('onlinePanel');
+
+  const aiLevelText = document.getElementById('aiLevelText');
+  const aiMinus = document.getElementById('aiMinus');
+  const aiPlus = document.getElementById('aiPlus');
+  const swapBtn = document.getElementById('swapBtn');
+
+  // Online UI
+  const hostBtn = document.getElementById('hostBtn');
+  const joinBtn = document.getElementById('joinBtn');
+  const dcCloseBtn = document.getElementById('dcCloseBtn');
+  const offerBox = document.getElementById('offerBox');
+  const remoteOfferBox = document.getElementById('remoteOfferBox');
+  const answerBox = document.getElementById('answerBox');
+  const remoteAnswerBox = document.getElementById('remoteAnswerBox');
+  const makeAnswerBtn = document.getElementById('makeAnswer');
+  const applyAnswerBtn = document.getElementById('applyAnswer');
+  const netStatus = document.getElementById('netStatus');
+  const copyOffer = document.getElementById('copyOffer');
+  const clearOffer = document.getElementById('clearOffer');
+  const copyAnswer = document.getElementById('copyAnswer');
+  const clearAnswer = document.getElementById('clearAnswer');
+
+  let board = Array.from({length:N}, () => Array(N).fill(EMPTY));
+  let moves = []; // {x,y,p}
+  let turn = BLACK;
+  let winner = EMPTY;
+  let mode = 'ai'; // ai | local | online
+  let aiLevel = 3;
+
+  // In AI mode, who is human?
+  let human = BLACK;
+  let ai = WHITE;
+
+  // Online role
+  let netRole = null; // 'host' or 'guest'
+  let myColor = null; // BLACK/WHITE when online
+  let peerColor = null;
+
+  // Rendering metrics
+  function pxRatio(){
+    return Math.max(1, Math.min(3, window.devicePixelRatio || 1));
+  }
+  function resizeCanvas(){
+    const r = pxRatio();
+    const cssW = Math.min(720, canvas.parentElement.clientWidth);
+    canvas.style.width = cssW + 'px';
+    canvas.style.height = cssW + 'px';
+    canvas.width = Math.floor(cssW * r);
+    canvas.height = Math.floor(cssW * r);
+    draw();
+  }
+
+  function cellMetrics(){
+    const pad = 28 * pxRatio();
+    const size = Math.min(canvas.width, canvas.height);
+    const inner = size - pad*2;
+    const step = inner / (N-1);
+    return {pad, step, size};
+  }
+
+  function draw(){
+    const {pad, step, size} = cellMetrics();
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    // background glow
+    const g = ctx.createRadialGradient(size*0.3, size*0.2, 10, size*0.5, size*0.5, size*0.9);
+    g.addColorStop(0, 'rgba(90,214,255,.10)');
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0,0,size,size);
+
+    // grid
+    ctx.strokeStyle = 'rgba(255,255,255,.18)';
+    ctx.lineWidth = Math.max(1, pxRatio());
+    for(let i=0;i<N;i++){
+      const x = pad + i*step;
+      const y = pad + i*step;
+      ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(size-pad, y); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x, pad); ctx.lineTo(x, size-pad); ctx.stroke();
+    }
+
+    // star points
+    const stars = [
+      [3,3],[11,3],[7,7],[3,11],[11,11]
+    ];
+    ctx.fillStyle='rgba(255,255,255,.28)';
+    for(const [sx,sy] of stars){
+      const cx = pad + sx*step, cy = pad + sy*step;
+      ctx.beginPath(); ctx.arc(cx, cy, 3.5*pxRatio(), 0, Math.PI*2); ctx.fill();
+    }
+
+    // pieces
+    for(let y=0;y<N;y++){
+      for(let x=0;x<N;x++){
+        if(board[y][x]===EMPTY) continue;
+        drawPiece(x,y,board[y][x]);
+      }
+    }
+
+    // last move marker
+    if(moves.length){
+      const m = moves[moves.length-1];
+      const cx = pad + m.x*step, cy = pad + m.y*step;
+      ctx.strokeStyle = 'rgba(90,214,255,.9)';
+      ctx.lineWidth = 2.2*pxRatio();
+      ctx.beginPath();
+      ctx.arc(cx, cy, 10*pxRatio(), 0, Math.PI*2);
+      ctx.stroke();
+    }
+
+    // winner overlay
+    if(winner!==EMPTY){
+      ctx.fillStyle='rgba(0,0,0,.55)';
+      ctx.fillRect(0,0,size,size);
+      ctx.fillStyle='#fff';
+      ctx.textAlign='center';
+      ctx.font = `${34*pxRatio()}px -apple-system, BlinkMacSystemFont, Segoe UI, Roboto`;
+      ctx.fillText((winner===BLACK?'黑':'白')+'方胜利！', size/2, size/2 - 10*pxRatio());
+      ctx.font = `${16*pxRatio()}px -apple-system, BlinkMacSystemFont, Segoe UI, Roboto`;
+      ctx.fillStyle='rgba(255,255,255,.8)';
+      ctx.fillText('点「新开局」继续', size/2, size/2 + 24*pxRatio());
+    }
+
+    syncHUD();
+  }
+
+  function drawPiece(x,y,p){
+    const {pad, step} = cellMetrics();
+    const cx = pad + x*step, cy = pad + y*step;
+    const r = step*0.42;
+
+    // shadow
+    ctx.beginPath();
+    ctx.fillStyle='rgba(0,0,0,.35)';
+    ctx.arc(cx + 2*pxRatio(), cy + 3*pxRatio(), r, 0, Math.PI*2);
+    ctx.fill();
+
+    // stone
+    ctx.beginPath();
+    if(p===BLACK){
+      const g = ctx.createRadialGradient(cx - r*0.3, cy - r*0.3, r*0.2, cx, cy, r);
+      g.addColorStop(0,'#38404f');
+      g.addColorStop(1,'#0a0f1b');
+      ctx.fillStyle=g;
+    }else{
+      const g = ctx.createRadialGradient(cx - r*0.3, cy - r*0.3, r*0.2, cx, cy, r);
+      g.addColorStop(0,'#ffffff');
+      g.addColorStop(1,'#cfd6e6');
+      ctx.fillStyle=g;
+    }
+    ctx.arc(cx, cy, r, 0, Math.PI*2);
+    ctx.fill();
+  }
+
+  function syncHUD(){
+    turnText.textContent = turn===BLACK ? '黑' : '白';
+    modeText.textContent = mode==='ai' ? 'AI' : (mode==='local' ? '本地' : '联机');
+    stateText.textContent = winner!==EMPTY ? '已结束' : (moves.length? '进行中':'等待开局');
+
+    if(mode==='ai'){
+      tipText.textContent = `AI模式：${human===BLACK?'你执黑先手':'你执白后手'}。直接点/触下子；一方连五即胜。`;
+    }else if(mode==='local'){
+      tipText.textContent = '本地双人：同一台设备轮流下子。';
+    }else{
+      if(!dc || dc.readyState!=='open'){
+        tipText.textContent = '联机模式：先建立连接（房主/客人交换配对码）。连接后房主执黑先手。';
+      }else{
+        tipText.textContent = `联机已连接：你执${myColor===BLACK?'黑':'白'}。轮到${turn===myColor?'你':'对手'}下。`;
+      }
+    }
+  }
+
+  function resetGame(keepMode=true){
+    board = Array.from({length:N}, () => Array(N).fill(EMPTY));
+    moves = [];
+    winner = EMPTY;
+    turn = BLACK;
+
+    if(!keepMode){
+      mode='ai';
+      human=BLACK; ai=WHITE;
+    }
+    draw();
+    if(mode==='ai' && human===WHITE){
+      // AI first
+      setTimeout(()=>aiMove(), 120);
+    }
+  }
+
+  function clearGame(){
+    resetGame(true);
+  }
+
+  function canPlayNow(p){
+    if(winner!==EMPTY) return false;
+    if(mode==='ai'){
+      return p===human && turn===human;
+    }
+    if(mode==='local'){
+      return true;
+    }
+    if(mode==='online'){
+      return dc && dc.readyState==='open' && turn===myColor;
+    }
+    return false;
+  }
+
+  function place(x,y,p){
+    if(x<0||x>=N||y<0||y>=N) return false;
+    if(board[y][x]!==EMPTY) return false;
+    board[y][x]=p;
+    moves.push({x,y,p});
+    // check win
+    if(checkFive(x,y,p)){
+      winner=p;
+    }else{
+      turn = (p===BLACK)?WHITE:BLACK;
+    }
+    draw();
+    return true;
+  }
+
+  function undo(){
+    if(!moves.length || winner!==EMPTY) return;
+    if(mode==='online'){
+      // Keep simple: no undo online (would require sync & agreement)
+      toast('联机模式暂不支持悔棋');
+      return;
+    }
+    if(mode==='ai'){
+      // undo two steps if possible (human+ai)
+      const last = moves.pop();
+      board[last.y][last.x]=EMPTY;
+      if(moves.length){
+        const last2 = moves.pop();
+        board[last2.y][last2.x]=EMPTY;
+      }
+      winner=EMPTY;
+      turn = human; // back to human
+      draw();
+      return;
+    }
+    // local
+    const last = moves.pop();
+    board[last.y][last.x]=EMPTY;
+    winner=EMPTY;
+    turn = last.p; // revert turn to the undone player
+    draw();
+  }
+
+  function checkFive(x,y,p){
+    const dirs = [[1,0],[0,1],[1,1],[1,-1]];
+    for(const [dx,dy] of dirs){
+      let cnt=1;
+      cnt += countDir(x,y,dx,dy,p);
+      cnt += countDir(x,y,-dx,-dy,p);
+      if(cnt>=5) return true;
+    }
+    return false;
+  }
+  function countDir(x,y,dx,dy,p){
+    let c=0;
+    for(let k=1;k<5;k++){
+      const nx=x+dx*k, ny=y+dy*k;
+      if(nx<0||nx>=N||ny<0||ny>=N) break;
+      if(board[ny][nx]!==p) break;
+      c++;
+    }
+    return c;
+  }
+
+  // =========================
+  // Input (touch/click)
+  // =========================
+  function eventToCell(e){
+    const rect = canvas.getBoundingClientRect();
+    const r = pxRatio();
+    const ex = (e.touches?e.touches[0].clientX:e.clientX) - rect.left;
+    const ey = (e.touches?e.touches[0].clientY:e.clientY) - rect.top;
+    const x = ex * (canvas.width / rect.width);
+    const y = ey * (canvas.height / rect.height);
+    const {pad, step} = cellMetrics();
+    const cx = Math.round((x - pad) / step);
+    const cy = Math.round((y - pad) / step);
+    return {cx, cy};
+  }
+
+  function handlePlay(cx,cy){
+    if(!canPlayNow(turn)) return;
+    const p = turn;
+    if(place(cx,cy,p)){
+      if(mode==='online'){
+        sendNet({t:'move', x:cx, y:cy, p});
+      }
+      if(mode==='ai' && winner===EMPTY){
+        // AI response
+        setTimeout(()=>aiMove(), 40);
+      }
+    }
+  }
+
+  canvas.addEventListener('click', (e)=>{
+    const {cx,cy}=eventToCell(e);
+    handlePlay(cx,cy);
+  });
+
+  canvas.addEventListener('touchstart', (e)=>{
+    e.preventDefault();
+    const {cx,cy}=eventToCell(e);
+    handlePlay(cx,cy);
+  }, {passive:false});
+
+  window.addEventListener('resize', resizeCanvas);
+
+  // =========================
+  // UI actions
+  // =========================
+  newBtn.onclick = ()=> resetGame(true);
+  resetBtn.onclick = ()=> clearGame();
+  undoBtn.onclick = ()=> undo();
+
+  modeSeg.addEventListener('click', (e)=>{
+    const btn = e.target.closest('button[data-mode]');
+    if(!btn) return;
+    const m = btn.dataset.mode;
+    [...modeSeg.querySelectorAll('button')].forEach(b=>b.classList.toggle('active', b===btn));
+    mode = m;
+    aiPanel.style.display = (mode==='ai')?'block':'none';
+    onlinePanel.style.display = (mode==='online')?'block':'none';
+    if(mode!=='online'){
+      // keep any existing dc connection unless user disconnects; but gameplay should use current mode
+    }
+    resetGame(true);
+  });
+
+  aiMinus.onclick = ()=>{ aiLevel = Math.max(1, aiLevel-1); aiLevelText.textContent=aiLevel; };
+  aiPlus.onclick = ()=>{ aiLevel = Math.min(5, aiLevel+1); aiLevelText.textContent=aiLevel; };
+
+  swapBtn.onclick = ()=>{
+    if(mode!=='ai') return;
+    // Swap roles
+    [human, ai] = [ai, human];
+    resetGame(true);
+  };
+
+  // =========================
+  // AI (5 levels): alpha-beta + pattern heuristic
+  // =========================
+  // Candidate move generation: cells near existing stones, scored, take top-K
+  function getCandidates(){
+    if(moves.length===0) return [{x:7,y:7}];
+    const near = new Map();
+    const radius = 2;
+    for(const m of moves){
+      for(let dy=-radius;dy<=radius;dy++){
+        for(let dx=-radius;dx<=radius;dx++){
+          const x=m.x+dx,y=m.y+dy;
+          if(x<0||x>=N||y<0||y>=N) continue;
+          if(board[y][x]!==EMPTY) continue;
+          const key = x+','+y;
+          if(!near.has(key)) near.set(key,{x,y,score:0});
+        }
+      }
+    }
+    // quick score by local heuristic (both sides)
+    for(const c of near.values()){
+      c.score = quickPointScore(c.x,c.y,ai) + quickPointScore(c.x,c.y,human)*0.92;
+    }
+    const arr = [...near.values()].sort((a,b)=>b.score-a.score);
+
+    // limit by level (higher level sees more candidates)
+    const K = [10, 14, 18, 24, 32][aiLevel-1];
+    return arr.slice(0, K);
+  }
+
+  function quickPointScore(x,y,p){
+    // Evaluate if placing p at (x,y) creates strong patterns
+    // Sum of directional line scores
+    let total=0;
+    const dirs = [[1,0],[0,1],[1,1],[1,-1]];
+    board[y][x]=p;
+    for(const [dx,dy] of dirs){
+      total += lineScore(x,y,dx,dy,p);
+    }
+    board[y][x]=EMPTY;
+    return total;
+  }
+
+  function lineScore(x,y,dx,dy,p){
+    // Count consecutive + open ends around x,y in that direction
+    let count=1;
+    let open=0;
+
+    // forward
+    let k=1;
+    while(true){
+      const nx=x+dx*k, ny=y+dy*k;
+      if(nx<0||nx>=N||ny<0||ny>=N) break;
+      if(board[ny][nx]===p){count++; k++; continue;}
+      if(board[ny][nx]===EMPTY) open++;
+      break;
+    }
+    // backward
+    k=1;
+    while(true){
+      const nx=x-dx*k, ny=y-dy*k;
+      if(nx<0||nx>=N||ny<0||ny>=N) break;
+      if(board[ny][nx]===p){count++; k++; continue;}
+      if(board[ny][nx]===EMPTY) open++;
+      break;
+    }
+
+    // Pattern scoring (aggressive + defensive)
+    // big weights for immediate win / threats
+    if(count>=5) return 1000000;
+    if(count===4 && open===2) return 200000; // open four
+    if(count===4 && open===1) return 50000;  // closed four
+    if(count===3 && open===2) return 12000;  // open three
+    if(count===3 && open===1) return 3000;   // closed three
+    if(count===2 && open===2) return 900;
+    if(count===2 && open===1) return 120;
+    if(count===1 && open===2) return 30;
+    return 0;
+  }
+
+  function evaluateBoard(forPlayer){
+    // Global evaluation: sum of all stones' patterns
+    // Keep it fast: scan lines around last moves by sampling candidates (good enough for mobile)
+    // We'll approximate by scoring all empty candidate points for both players (limited set)
+    const cand = getCandidates();
+    let score=0;
+    for(const c of cand){
+      const a = quickPointScore(c.x,c.y,forPlayer);
+      const b = quickPointScore(c.x,c.y,opponent(forPlayer));
+      score += a - b*1.05;
+    }
+    return score;
+  }
+
+  function opponent(p){ return p===BLACK?WHITE:BLACK; }
+
+  function aiMove(){
+    if(mode!=='ai' || winner!==EMPTY) return;
+    if(turn!==ai) return;
+
+    const depth = [1,2,3,4,5][aiLevel-1];
+    const t0 = performance.now();
+
+    const best = searchRoot(depth, ai);
+
+    const t1 = performance.now();
+    // console.log('AI level', aiLevel, 'depth', depth, 'ms', (t1-t0).toFixed(1), 'best', best);
+
+    if(best){
+      place(best.x, best.y, ai);
+    }
+  }
+
+  function searchRoot(depth, player){
+    const cand = getCandidates();
+
+    // immediate tactics: win now or block opponent win now
+    for(const c of cand){
+      if(isWinningMove(c.x,c.y,player)) return c;
+    }
+    const opp = opponent(player);
+    for(const c of cand){
+      if(isWinningMove(c.x,c.y,opp)) return c; // block
+    }
+
+    let bestMove = cand[0] || null;
+    let bestScore = -Infinity;
+    let alpha = -Infinity;
+    const beta = Infinity;
+
+    for(const c of cand){
+      board[c.y][c.x] = player;
+      moves.push({x:c.x,y:c.y,p:player});
+
+      const s = -alphabeta(depth-1, opp, -beta, -alpha, player);
+
+      moves.pop();
+      board[c.y][c.x] = EMPTY;
+
+      if(s > bestScore){
+        bestScore = s;
+        bestMove = c;
+      }
+      alpha = Math.max(alpha, s);
+    }
+    return bestMove;
+  }
+
+  function alphabeta(depth, current, alpha, beta, maximizer){
+    // Terminal checks
+    if(moves.length){
+      const last = moves[moves.length-1];
+      if(checkFive(last.x,last.y,last.p)){
+        // If last player made 5, then current side loses (from current POV)
+        const lastPlayer = last.p;
+        const winForMax = (lastPlayer===maximizer);
+        return winForMax ? 999999 - (5-depth) : -999999 + (5-depth);
+      }
+    }
+    if(depth<=0){
+      return evaluateBoard(maximizer);
+    }
+
+    const cand = getCandidates();
+    const opp = opponent(current);
+
+    // move ordering by quick heuristic (helps pruning)
+    cand.sort((a,b)=>{
+      const sa = quickPointScore(a.x,a.y,current) + quickPointScore(a.x,a.y,opp)*0.7;
+      const sb = quickPointScore(b.x,b.y,current) + quickPointScore(b.x,b.y,opp)*0.7;
+      return sb-sa;
+    });
+
+    for(const c of cand){
+      board[c.y][c.x] = current;
+      moves.push({x:c.x,y:c.y,p:current});
+
+      const score = -alphabeta(depth-1, opp, -beta, -alpha, maximizer);
+
+      moves.pop();
+      board[c.y][c.x] = EMPTY;
+
+      if(score > alpha) alpha = score;
+      if(alpha >= beta) break;
+    }
+    return alpha;
+  }
+
+  function isWinningMove(x,y,p){
+    if(board[y][x]!==EMPTY) return false;
+    board[y][x]=p;
+    const win = checkFive(x,y,p);
+    board[y][x]=EMPTY;
+    return win;
+  }
+
+  // =========================
+  // Online (WebRTC P2P) - manual signaling
+  // =========================
+  let pc = null;
+  let dc = null;
+
+  const rtcConfig = {
+    iceServers: [
+      {urls:['stun:stun.l.google.com:19302','stun:stun1.l.google.com:19302']}
+    ]
+  };
+
+  function setNetStatus(text, cls='neutral'){
+    netStatus.className = 'status ' + cls;
+    netStatus.textContent = text;
+  }
+
+  function jsonPack(obj){
+    return btoa(unescape(encodeURIComponent(JSON.stringify(obj))));
+  }
+  function jsonUnpack(str){
+    return JSON.parse(decodeURIComponent(escape(atob(str.trim()))));
+  }
+
+  async function createHost(){
+    try{
+      cleanupNet(false);
+      mode='online';
+      netRole='host'; myColor=BLACK; peerColor=WHITE;
+      [...modeSeg.querySelectorAll('button')].forEach(b=>b.classList.toggle('active', b.dataset.mode==='online'));
+      aiPanel.style.display='none'; onlinePanel.style.display='block';
+      resetGame(true);
+
+      pc = new RTCPeerConnection(rtcConfig);
+      dc = pc.createDataChannel('gomoku');
+      wireDC(dc);
+
+      pc.oniceconnectionstatechange = () => {
+        const s = pc.iceConnectionState;
+        if(s==='connected' || s==='completed') setNetStatus('已连接（你是房主/黑）', 'ok');
+        else if(s==='disconnected' || s==='failed') setNetStatus('连接异常：'+s, 'bad');
+        else setNetStatus('连接状态：'+s, 'neutral');
+      };
+
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+
+      // Wait ICE gathering a bit
+      await waitIceGathering(pc, 1800);
+
+      offerBox.value = jsonPack(pc.localDescription);
+      setNetStatus('房间码已生成：发给对方（客人）', 'ok');
+      dcCloseBtn.disabled = false;
+    }catch(err){
+      console.error(err);
+      toast('开房失败：'+(err?.message||err));
+      setNetStatus('开房失败', 'bad');
+    }
+  }
+
+  async function createGuestAnswer(){
+    try{
+      cleanupNet(false);
+      mode='online';
+      netRole='guest'; myColor=WHITE; peerColor=BLACK;
+      [...modeSeg.querySelectorAll('button')].forEach(b=>b.classList.toggle('active', b.dataset.mode==='online'));
+      aiPanel.style.display='none'; onlinePanel.style.display='block';
+      resetGame(true);
+
+      pc = new RTCPeerConnection(rtcConfig);
+
+      pc.ondatachannel = (e)=>{
+        dc = e.channel;
+        wireDC(dc);
+      };
+
+      pc.oniceconnectionstatechange = () => {
+        const s = pc.iceConnectionState;
+        if(s==='connected' || s==='completed') setNetStatus('已连接（你是客人/白）', 'ok');
+        else if(s==='disconnected' || s==='failed') setNetStatus('连接异常：'+s, 'bad');
+        else setNetStatus('连接状态：'+s, 'neutral');
+      };
+
+      const offer = jsonUnpack(remoteOfferBox.value);
+      await pc.setRemoteDescription(offer);
+
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+
+      await waitIceGathering(pc, 1800);
+
+      answerBox.value = jsonPack(pc.localDescription);
+      setNetStatus('应答码已生成：发回房主', 'ok');
+      dcCloseBtn.disabled = false;
+    }catch(err){
+      console.error(err);
+      toast('生成应答失败：'+(err?.message||err));
+      setNetStatus('生成应答失败', 'bad');
+    }
+  }
+
+  async function applyHostAnswer(){
+    try{
+      if(!pc) return toast('请先开房生成房间码');
+      const ans = jsonUnpack(remoteAnswerBox.value);
+      await pc.setRemoteDescription(ans);
+      setNetStatus('已应用应答码：等待连接…', 'neutral');
+    }catch(err){
+      console.error(err);
+      toast('应用应答失败：'+(err?.message||err));
+      setNetStatus('应用应答失败', 'bad');
+    }
+  }
+
+  function wireDC(channel){
+    channel.onopen = ()=>{
+      setNetStatus('数据通道已打开：开始对战！房主黑先', 'ok');
+      // ensure fresh game
+      resetGame(true);
+      // host starts first
+      turn = BLACK;
+      draw();
+    };
+    channel.onclose = ()=> setNetStatus('数据通道已关闭', 'bad');
+    channel.onerror = ()=> setNetStatus('数据通道错误', 'bad');
+    channel.onmessage = (ev)=>{
+      try{
+        const msg = JSON.parse(ev.data);
+        onNetMsg(msg);
+      }catch(e){}
+    };
+  }
+
+  function sendNet(obj){
+    if(dc && dc.readyState==='open'){
+      dc.send(JSON.stringify(obj));
+    }
+  }
+
+  function onNetMsg(msg){
+    if(msg.t==='move'){
+      // opponent move
+      if(winner!==EMPTY) return;
+      if(board[msg.y][msg.x]!==EMPTY) return;
+      place(msg.x,msg.y,msg.p);
+    }else if(msg.t==='reset'){
+      resetGame(true);
+    }else if(msg.t==='toast'){
+      toast(msg.m || '消息');
+    }
+  }
+
+  async function waitIceGathering(pc, timeoutMs){
+    if(pc.iceGatheringState==='complete') return;
+    await new Promise((resolve)=>{
+      let done=false;
+      const t=setTimeout(()=>{ if(done) return; done=true; resolve(); }, timeoutMs);
+      pc.addEventListener('icegatheringstatechange', ()=>{
+        if(pc.iceGatheringState==='complete' && !done){
+          done=true; clearTimeout(t); resolve();
+        }
+      });
+    });
+  }
+
+  function cleanupNet(full=true){
+    try{
+      if(dc){ dc.onopen=dc.onclose=dc.onerror=dc.onmessage=null; if(full) dc.close(); }
+    }catch(_){}
+    try{
+      if(pc){ pc.ondatachannel=pc.oniceconnectionstatechange=null; if(full) pc.close(); }
+    }catch(_){}
+    pc=null; dc=null;
+    if(full){
+      setNetStatus('未连接','neutral');
+      dcCloseBtn.disabled = true;
+      netRole=null; myColor=null; peerColor=null;
+    }
+  }
+
+  hostBtn.onclick = ()=> createHost();
+  joinBtn.onclick = ()=> { setNetStatus('客人模式：先粘贴房主房间码，再点“生成应答码”','neutral'); };
+  makeAnswerBtn.onclick = ()=> createGuestAnswer();
+  applyAnswerBtn.onclick = ()=> applyHostAnswer();
+  dcCloseBtn.onclick = ()=> { cleanupNet(true); toast('已断开'); };
+
+  copyOffer.onclick = async()=>{ await copyText(offerBox.value); toast('房间码已复制'); };
+  clearOffer.onclick = ()=> offerBox.value='';
+  copyAnswer.onclick = async()=>{ await copyText(answerBox.value); toast('应答码已复制'); };
+  clearAnswer.onclick = ()=> answerBox.value='';
+
+  async function copyText(t){
+    try{ await navigator.clipboard.writeText(t); return; }catch(e){}
+    // fallback
+    const ta=document.createElement('textarea');
+    ta.value=t; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+  }
+
+  // =========================
+  // Tiny toast
+  // =========================
+  let toastTimer=null;
+  function toast(text){
+    let el=document.getElementById('toast');
+    if(!el){
+      el=document.createElement('div');
+      el.id='toast';
+      el.style.position='fixed';
+      el.style.left='50%';
+      el.style.bottom='18px';
+      el.style.transform='translateX(-50%)';
+      el.style.padding='10px 12px';
+      el.style.background='rgba(0,0,0,.65)';
+      el.style.border='1px solid rgba(255,255,255,.15)';
+      el.style.color='#fff';
+      el.style.borderRadius='12px';
+      el.style.fontWeight='800';
+      el.style.fontSize='12px';
+      el.style.zIndex='9999';
+      el.style.maxWidth='92vw';
+      el.style.textAlign='center';
+      document.body.appendChild(el);
+    }
+    el.textContent=text;
+    el.style.opacity='1';
+    clearTimeout(toastTimer);
+    toastTimer=setTimeout(()=>{ el.style.opacity='0'; }, 1600);
+  }
+
+  // =========================
+  // Start
+  // =========================
+  aiLevelText.textContent = aiLevel;
+  resizeCanvas();
+  resetGame(true);
+
+})();
+</script>
+</body>
+</html>
